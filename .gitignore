@@ -1,4 +1,4 @@
 formenv/*
-token = ${{ secrets.GITHUB_TOKEN }}
+token.json
 .DS_Store
 ```
