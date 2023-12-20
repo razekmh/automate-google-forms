@@ -1,4 +1,4 @@
 formenv/*
-token.json
+*.json
 .DS_Store
 ```
