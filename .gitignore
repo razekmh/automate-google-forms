@@ -1,4 +1,5 @@
 formenv/*
 *.json
 .DS_Store
+*.pyc
 ```

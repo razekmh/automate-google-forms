@@ -1,19 +1,14 @@
 # %%
-from googleapiclient.discovery import build
-from google.oauth2 import service_account
-
+from cred import get_credentials
+from service_template import form_service, drive_service, sheet_service, form_handler
 # %%
-# Set up credentials
-credentials = service_account.Credentials.from_service_account_file(
-    'token.json',
-    scopes=['https://www.googleapis.com/auth/drive',
-            'https://www.googleapis.com/auth/forms',
-            "https://www.googleapis.com/auth/spreadsheets"]
-)
-
+# Create service instances with credentials
+form_service_instance = form_service(get_credentials())
+drive_service_instance = drive_service(get_credentials())
+sheet_service_instance = sheet_service(get_credentials())
 # %%
-# Create a service object
-service = build('forms', 'v1', credentials=credentials)
+# Create a form
+form = form_handler(form_service_instance, form_title = "Test Form")
 
 # %%
 # Request body for creating a form
