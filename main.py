@@ -36,7 +36,7 @@ NEW_QUESTION = {
                         "question": {
                             "required": True,
                             "choiceQuestion": {
-                                "type": "RADIO",
+                                "type": "CHECKBOX",
                                 "options": [
                                     {"value": "1965"},
                                     {"value": "1967"},
@@ -68,7 +68,7 @@ UPDATE_QUESTION = {
                             "questionId": "00d3ea29",
                             "required": True,
                             "choiceQuestion": {
-                                "type": "CHECKBOX",
+                                "type": "RADIO",
                                 "options": [
                                     {"value": "1965"},
                                     {"value": "1967"},
