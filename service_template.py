@@ -52,11 +52,14 @@ class sheet_service(service_template):
 
 
 class form_handler:
-    def __init__(self, form_service, form_title="Empty Form"):
+    def __init__(
+        self, form_service, form_title="Empty Form", documentTitle="document form"
+    ):
         self.form_service = form_service
         NEW_FORM = {
             "info": {
                 "title": form_title,
+                "documentTitle": documentTitle,
             }
         }
         self.form = self.form_service.service.forms().create(body=NEW_FORM).execute()
@@ -77,13 +80,13 @@ class form_handler:
         result = self.form_service.service.forms().get(formId=self.form_id).execute()
         return result
 
-    def update_name(self, new_name):
-        # Update the title/name of the form
+    def update_form_title(self, new_form_title):
+        # Update the title of the form
         UPDATE_FORM = {
             "requests": [
                 {
                     "updateFormInfo": {
-                        "info": {"title": (new_name)},
+                        "info": {"title": (new_form_title)},
                         "updateMask": "title",
                     }
                 }
@@ -100,6 +103,15 @@ class form_handler:
 
     def add_question(self, question):
         # Adds the question to the form
+        question_setting = (
+            self.form_service.service.forms()
+            .batchUpdate(formId=self.form_id, body=question)
+            .execute()
+        )
+        return question_setting
+
+    def update_question(self, question):
+        # upadtes the question to the form
         question_setting = (
             self.form_service.service.forms()
             .batchUpdate(formId=self.form_id, body=question)
