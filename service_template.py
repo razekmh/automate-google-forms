@@ -13,29 +13,35 @@ class service_template(ABC):
 
 
 class form_service(service_template):
-    def __init__(self, credentials):
+    def __init__(self, credentials: dict) -> None:
         self.service = build("forms", "v1", credentials=credentials)
 
-    def get(self, id):
+    def get(self, id: str) -> dict:
         result = self.service.forms().get(formId=id).execute()
         return result
 
 
 class drive_service(service_template):
-    def __init__(self, credentials):
+    def __init__(self, credentials: dict) -> None:
         self.service = build("drive", "v3", credentials=credentials)
 
-    def get(self, id):
+    def get(self, id: str) -> dict:
         result = self.service.files().get(fileId=id).execute()
         return result
 
-    def list_forms(self):
+    def list_forms(self) -> dict:
         result = (
             self.service.files()
             .list(q="mimeType='application/vnd.google-apps.form'")
             .execute()
         )
         return result
+
+    def delete_all_forms(self) -> dict:
+        forms = self.list_forms()
+        for form in forms["files"]:
+            self.service.files().delete(fileId=form["id"]).execute()
+        return forms
 
 
 class sheet_service(service_template):
@@ -81,7 +87,6 @@ class form_handler:
         return result
 
     def update_form_title(self, new_form_title):
-        # Update the title of the form
         UPDATE_FORM = {
             "requests": [
                 {
@@ -92,7 +97,6 @@ class form_handler:
                 }
             ]
         }
-        # Use the update method to save changes
         updated_form = (
             self.form_service.service.forms()
             .batchUpdate(formId=self.form_id, body=UPDATE_FORM)
@@ -102,7 +106,6 @@ class form_handler:
         return updated_form
 
     def add_question(self, question):
-        # Adds the question to the form
         question_setting = (
             self.form_service.service.forms()
             .batchUpdate(formId=self.form_id, body=question)
@@ -111,7 +114,6 @@ class form_handler:
         return question_setting
 
     def update_question(self, question):
-        # upadtes the question to the form
         question_setting = (
             self.form_service.service.forms()
             .batchUpdate(formId=self.form_id, body=question)
