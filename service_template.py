@@ -97,3 +97,16 @@ class form_handler:
         )
 
         return updated_form
+
+    def add_question(self, question):
+        # Adds the question to the form
+        question_setting = (
+            self.form_service.service.forms()
+            .batchUpdate(formId=self.form_id, body=question)
+            .execute()
+        )
+        return question_setting
+
+    def get_form_url(self):
+        form_info = self.get()
+        return form_info["responderUri"]
