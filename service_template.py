@@ -124,3 +124,12 @@ class form_handler:
     def get_form_url(self):
         form_info = self.get()
         return form_info["responderUri"]
+
+    def get_responses(self):
+        responses = (
+            self.form_service.service.forms()
+            .responses()
+            .list(formId=self.form_id)
+            .execute()
+        )
+        return responses
