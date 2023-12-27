@@ -2,4 +2,5 @@ formenv/*
 *.json
 .DS_Store
 *.pyc
+local_settings.py
 ```

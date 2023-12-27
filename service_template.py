@@ -48,6 +48,19 @@ class sheet_service(service_template):
     def __init__(self, credentials):
         self.service = build("sheets", "v4", credentials=credentials)
 
+    def get_data_from_sheet(
+        self, spreadsheetId: str, range: str, majorDimension: str = "ROWS"
+    ) -> dict:
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .get(
+                spreadsheetId=spreadsheetId, range=range, majorDimension=majorDimension
+            )
+            .execute()
+        )
+        return result
+
     def get(self, id):
         result = self.service.spreadsheets().get(spreadsheetId=id).execute()
         return result
