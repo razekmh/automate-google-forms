@@ -1,6 +1,8 @@
 # %%
 from cred import get_credentials
 from service_template import form_service, drive_service, sheet_service, form_handler
+from utils import convert_sheet_data_to_df
+from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION
 
 # %%
 # Create service instances with credentials
@@ -89,3 +91,13 @@ UPDATE_QUESTION = {
 
 # %%
 updated_questions = form.update_question(UPDATE_QUESTION)
+
+# %%
+print(
+    convert_sheet_data_to_df(
+        sheet_service_instance.get_data_from_sheet(
+            SPREADSHEET_ID, RANGE, MAJOR_DIMENSION
+        )
+    )
+)
+# %%
