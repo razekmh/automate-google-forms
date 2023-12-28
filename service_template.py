@@ -1,6 +1,13 @@
 from abc import ABC, abstractmethod
 from googleapiclient.discovery import build
 from dataclasses import dataclass
+from enum import Enum
+
+
+class Table(Enum):
+    FIRST_TABLE = 4
+    SECOND_TABLE = 7
+    THIRD_TABLE = 20
 
 
 class service_template(ABC):
@@ -20,19 +27,21 @@ class document_service(service_template):
         result = self.service.documents().get(documentId=id).execute()
         return result
 
-    def get_first_column_text(self, document: dict, index_of_table: int = 0) -> list:
+    def get_first_column_text(
+        self, document: dict, requested_table: Table = Table.FIRST_TABLE
+    ) -> list:
         """
         Returns a list of strings from the first column of a Google Doc
         """
+        index_of_table = requested_table.value
         table = document["body"]["content"][index_of_table]["table"]
-        rows = table["tableRows"]
-        first_column_text = []
-        for row in rows:
-            first_column_text.append(
-                row["tableCells"][0]["content"][0]["paragraph"]["elements"][0][
-                    "textRun"
-                ]["content"]
-            )
+        first_column = table["tableRows"]
+        first_column_text = [
+            element["tableCells"][0]["content"][0]["paragraph"]["elements"][0][
+                "textRun"
+            ]["content"]
+            for element in first_column
+        ]
         return first_column_text
 
 
