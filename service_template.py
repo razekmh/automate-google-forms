@@ -199,25 +199,6 @@ class form_handler:
 
         return updated_form
 
-    def update_document_title(self, new_document_title):
-        UPDATE_FORM = {
-            "requests": [
-                {
-                    "updateFormInfo": {
-                        "info": {"documentTitle": (new_document_title)},
-                        "updateMask": "title",
-                    }
-                }
-            ]
-        }
-        updated_form = (
-            self.form_service.service.forms()
-            .batchUpdate(formId=self.form_id, body=UPDATE_FORM)
-            .execute()
-        )
-
-        return updated_form
-
     def add_question(self, question):
         question_setting = (
             self.form_service.service.forms()
@@ -254,7 +235,6 @@ class form_handler:
         document_service_instance: document_service,
     ):
         self.update_form_title(form_title.value)
-        self.update_document_title(str(form_title.value) + " Document")
         document_content = document_service_instance.get(DOCUMENT_ID)
         award_enum = convert_form_type_enum_to_award_enum(form_title)
         critria = document_service_instance.get_award_info(document_content, award_enum)
