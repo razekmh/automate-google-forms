@@ -65,13 +65,14 @@ def make_form(groupdf: pd.core.groupby.DataFrameGroupBy, document_service_instan
 def build_json_for_grid_question(selection_criteria, name_of_candidate, INDEX=0):
     answer_values = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
     options = [{"value": value} for value in answer_values]
+    cleaned_name_of_candidate = name_of_candidate.replace("\n", " ")
     questions = [
         {"rowQuestion": {"title": question}} for question in selection_criteria
     ]
     NEW_GRID_QUESTION = {
         "createItem": {
             "item": {
-                "title": name_of_candidate,
+                "title": cleaned_name_of_candidate,
                 "questionGroupItem": {
                     "grid": {
                         "columns": {
