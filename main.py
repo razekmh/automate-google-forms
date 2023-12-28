@@ -64,6 +64,38 @@ NEW_QUESTION = {
     ]
 }
 # %%
+NEW_GRID_QUESTION = {
+    "requests": [
+        {
+            "createItem": {
+                "item": {
+                    "title": "TEST ",
+                    "questionGroupItem": {
+                        "grid": {
+                            "columns": {
+                                "type": "RADIO",
+                                "options": [
+                                    {"value": "A"},
+                                    {"value": "B"},
+                                    {"value": "C"},
+                                    {"value": "D"},
+                                ],
+                            }
+                        },
+                        "questions": [
+                            {"rowQuestion": {"title": "smaple1"}},
+                            {"rowQuestion": {"title": "sample2"}},
+                        ],
+                    },
+                },
+                "location": {"index": "INDEX"},
+            }
+        }
+    ]
+}
+
+
+# %%
 first_question = form.add_question(NEW_QUESTION)
 print(first_question)
 # %%
