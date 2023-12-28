@@ -9,7 +9,7 @@ from service_template import (
     Award,
 )
 from utils import convert_sheet_data_to_df
-from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION
+from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION, DOCUMENT_ID
 
 # %%
 # Create service instances with credentials
