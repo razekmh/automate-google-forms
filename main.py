@@ -6,6 +6,7 @@ from service_template import (
     sheet_service,
     form_handler,
     document_service,
+    Table,
 )
 from utils import convert_sheet_data_to_df
 from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION
