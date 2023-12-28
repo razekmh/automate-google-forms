@@ -1,10 +1,27 @@
 import pandas as pd
+from typing import DataFrame
 
 
 def convert_sheet_data_to_df(sheet_data: dict) -> pd.DataFrame:
     values = sheet_data.get("values", [])
+    values = [
+        [inner_item.strip() for inner_item in outer_item] for outer_item in values
+    ]
     df = pd.DataFrame(values[1:], columns=values[0])
     return df
+
+
+def process_df(df: pd.DataFrame) -> pd.core.groupby.DataFrameGroupBy:
+    project_alumni_filter = df["Individual/Project/Alumni"].isin(
+        ["Alumni Association", "Project"]
+    )
+    df.loc[project_alumni_filter, "For Individual Nominations only"] = df[
+        "Individual/Project/Alumni"
+    ]
+    groupdf = df.groupby(
+        ["Individual/Project/Alumni", "For Individual Nominations only"]
+    )
+    return groupdf
 
 
 def build_json_for_grid_question(selection_criteria, name_of_candidate, INDEX=0):
