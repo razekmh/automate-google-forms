@@ -5,9 +5,22 @@ from enum import Enum
 
 
 class Award(Enum):
-    INDIVIDUAL_APPLICATIONS = (3, 4)
-    COLLABORATIVE_PROJECTS = (6, 7)
-    ALLUMNI_ASSOCIATIONS = (19, 20)
+    INDIVIDUAL_APPLICATIONS = (3, 4, "Individual")
+    COLLABORATIVE_PROJECTS = (6, 7, "Project")
+    ALLUMNI_ASSOCIATIONS = (19, 20, "Alumni Association")
+
+
+class Form_Type(Enum):
+    ALLUMNI_ASSOCIATIONS = "Alumni Association"
+    HUMAN_RIGHTS = "Achievement in Human Rights"
+    INNOVATIONS = "Achievement in Innovations and Entrepreneurship"
+    POLITICS = "Achievement in Politics"
+    SCIENCE = "Achievement in Science"
+    SOCIAL_ENVIRONMENTAL = "Achievement in Social & Environmental Impact"
+    INDUSTRY = "Achievement in the industry of expertise (professional)"
+    OTHER = "Other Area"
+    PUBLICATIONS = "Outstanding Publications"
+    PROJECT = "Project"
 
 
 class service_template(ABC):
@@ -67,6 +80,26 @@ class form_service(service_template):
     def get(self, id: str) -> dict:
         result = self.service.forms().get(formId=id).execute()
         return result
+
+    def create_empty_form(
+        self, form_title="Empty Form", documentTitle="Empty Form Document"
+    ):
+        NEW_FORM = {
+            "info": {
+                "title": form_title,
+                "documentTitle": documentTitle,
+            }
+        }
+        form = self.service.service.forms().create(body=NEW_FORM).execute()
+        return form
+
+    def create_award_form(self, form_title: Enum):
+        if form_title == Form_Type.PROJECT:
+            pass
+        elif form_title == Form_Type.ALLUMNI_ASSOCIATIONS:
+            pass
+        else:
+            pass
 
 
 class drive_service(service_template):
