@@ -6,15 +6,12 @@ from service_template import (
     sheet_service,
     form_handler,
     document_service,
-    Award,
-    Form_Type,
 )
 from utils import (
     convert_sheet_data_to_df,
-    make_form,
-    build_requests_list,
-    build_json_for_grid_question,
     process_df,
+    Award,
+    Form_Type,
 )
 from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION, DOCUMENT_ID
 import pandas as pd
@@ -26,8 +23,22 @@ drive_service_instance = drive_service(get_credentials())
 sheet_service_instance = sheet_service(get_credentials())
 document_service_instance = document_service(get_credentials())
 # %%
+# read the applicatants data from the google sheet
+group_dataframes_of_applicatants = process_df(
+    convert_sheet_data_to_df(
+        sheet_service_instance.get_data_from_sheet(
+            SPREADSHEET_ID, RANGE, MAJOR_DIMENSION
+        )
+    )
+)
+# %%
 # Create a form
 form = form_handler(form_service_instance, form_title="Test Form")
+# %%
+# make award form
+form.create_award_form(
+    group_dataframes_of_applicatants, Form_Type.PROJECT, document_service_instance
+)
 
 # %%
 update_name = form.update_form_title("New Form Name")
@@ -141,7 +152,5 @@ UPDATE_QUESTION = {
 updated_questions = form.update_question(UPDATE_QUESTION)
 
 # %%
-df = convert_sheet_data_to_df(
-    sheet_service_instance.get_data_from_sheet(SPREADSHEET_ID, RANGE, MAJOR_DIMENSION)
-)
+
 # %%
