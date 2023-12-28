@@ -20,6 +20,21 @@ class document_service(service_template):
         result = self.service.documents().get(documentId=id).execute()
         return result
 
+    def get_first_column_text(self, document: dict, index_of_table: int = 0) -> list:
+        """
+        Returns a list of strings from the first column of a Google Doc
+        """
+        table = document["body"]["content"][index_of_table]["table"]
+        rows = table["tableRows"]
+        first_column_text = []
+        for row in rows:
+            first_column_text.append(
+                row["tableCells"][0]["content"][0]["paragraph"]["elements"][0][
+                    "textRun"
+                ]["content"]
+            )
+        return first_column_text
+
 
 class form_service(service_template):
     def __init__(self, credentials: dict) -> None:
