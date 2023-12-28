@@ -1,6 +1,25 @@
 import pandas as pd
-from service_template import Award
 from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION, DOCUMENT_ID
+from enum import Enum
+
+
+class Award(Enum):
+    INDIVIDUAL_APPLICATIONS = (3, 4, "Individual")
+    COLLABORATIVE_PROJECTS = (6, 7, "Project")
+    ALLUMNI_ASSOCIATIONS = (19, 20, "Alumni Association")
+
+
+class Form_Type(Enum):
+    ALLUMNI_ASSOCIATIONS = "Alumni Association"
+    HUMAN_RIGHTS = "Achievement in Human Rights"
+    INNOVATIONS = "Achievement in Innovations and Entrepreneurship"
+    POLITICS = "Achievement in Politics"
+    SCIENCE = "Achievement in Science"
+    SOCIAL_ENVIRONMENTAL = "Achievement in Social & Environmental Impact"
+    INDUSTRY = "Achievement in the industry of expertise (professional)"
+    OTHER = "Other Area"
+    PUBLICATIONS = "Outstanding Publications"
+    PROJECT = "Project"
 
 
 def convert_sheet_data_to_df(sheet_data: dict) -> pd.DataFrame:
@@ -25,41 +44,17 @@ def process_df(df: pd.DataFrame) -> pd.core.groupby.DataFrameGroupBy:
     return groupdf
 
 
-def make_form(groupdf: pd.core.groupby.DataFrameGroupBy, document_service_instance):
-    types_pf_award = [index[0] for index, _ in groupdf]
-    titles_of_forms = [index[1] for index, _ in groupdf]
-    document_content = document_service_instance.get(DOCUMENT_ID)
+# def select_enum(form_title):
+#     return [award_enum.value for award_enum in  enumerate(Award) if award_enum.value[2] == award_type][0]
 
-    for form_title in titles_of_forms:
-        question_json_list = []
-        if form_title == "Project":
-            award_type = "Project"
-            critria = document_service_instance.get_award_info(
-                document_content, Award.COLLABORATIVE_PROJECTS
-            )
-            dataframe = groupdf.get_group(("Project", "Project"))
-            for name in dataframe["Name"]:
-                question_json = build_json_for_grid_question(
-                    list(critria.values())[0], name
-                )
-                question_json_list.append(question_json)
-            request_body = build_requests_list(question_json_list)
-            return request_body
 
-        elif form_title == "Alumni Association":
-            award_type = "Alumni Association"
-            critria = document_service_instance.get_award_info(
-                document_content, Award.ALLUMNI_ASSOCIATIONS
-            )
-            dataframe = groupdf.get_group(("Alumni Association", "Alumni Association"))
-            pass
-
-        else:
-            award_type = "Individual"
-            critria = document_service_instance.get_award_info(
-                document_content, Award.INDIVIDUAL_APPLICATIONS
-            )
-            dataframe = groupdf.get_group(("Individual", form_title))
+def make_form(form_title: Enum):
+    if form_title == Form_Type.PROJECT:
+        pass
+    elif form_title == Form_Type.ALLUMNI_ASSOCIATIONS:
+        pass
+    else:
+        pass
 
 
 def build_json_for_grid_question(selection_criteria, name_of_candidate, INDEX=0):
@@ -93,3 +88,12 @@ def build_json_for_grid_question(selection_criteria, name_of_candidate, INDEX=0)
 def build_requests_list(list_of_requests):
     requests_list = {"requests": list_of_requests}
     return requests_list
+
+
+def convert_form_type_enum_to_award_enum(form_title: Enum):
+    if form_title == Form_Type.PROJECT:
+        return Award.COLLABORATIVE_PROJECTS
+    elif form_title == Form_Type.ALLUMNI_ASSOCIATIONS:
+        return Award.ALLUMNI_ASSOCIATIONS
+    else:
+        return Award.INDIVIDUAL_APPLICATIONS

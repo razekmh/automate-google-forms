@@ -2,6 +2,14 @@ from abc import ABC, abstractmethod
 from googleapiclient.discovery import build
 from dataclasses import dataclass
 from enum import Enum
+from utils import (
+    build_json_for_grid_question,
+    build_requests_list,
+    convert_form_type_enum_to_award_enum,
+    Award,
+)
+import pandas as pd
+from settings import DOCUMENT_ID
 
 
 class Award(Enum):
@@ -92,14 +100,6 @@ class form_service(service_template):
         }
         form = self.service.service.forms().create(body=NEW_FORM).execute()
         return form
-
-    def create_award_form(self, form_title: Enum):
-        if form_title == Form_Type.PROJECT:
-            pass
-        elif form_title == Form_Type.ALLUMNI_ASSOCIATIONS:
-            pass
-        else:
-            pass
 
 
 class drive_service(service_template):
@@ -199,6 +199,25 @@ class form_handler:
 
         return updated_form
 
+    def update_document_title(self, new_document_title):
+        UPDATE_FORM = {
+            "requests": [
+                {
+                    "updateFormInfo": {
+                        "info": {"documentTitle": (new_document_title)},
+                        "updateMask": "title",
+                    }
+                }
+            ]
+        }
+        updated_form = (
+            self.form_service.service.forms()
+            .batchUpdate(formId=self.form_id, body=UPDATE_FORM)
+            .execute()
+        )
+
+        return updated_form
+
     def add_question(self, question):
         question_setting = (
             self.form_service.service.forms()
@@ -227,3 +246,27 @@ class form_handler:
             .execute()
         )
         return responses
+
+    def create_award_form(
+        self,
+        group_dataframes_of_applicatants: pd.core.groupby.DataFrameGroupBy,
+        form_title: Enum,
+        document_service_instance: document_service,
+    ):
+        self.update_form_title(form_title.value)
+        self.update_document_title(str(form_title.value) + " Document")
+        document_content = document_service_instance.get(DOCUMENT_ID)
+        award_enum = convert_form_type_enum_to_award_enum(form_title)
+        critria = document_service_instance.get_award_info(document_content, award_enum)
+        question_json_list = []
+        dataframe = group_dataframes_of_applicatants.get_group(
+            (award_enum.value[2], form_title.value)
+        )
+        for name in dataframe["Name"]:
+            question_json = build_json_for_grid_question(
+                list(critria.values())[0], name
+            )
+            question_json_list.append(question_json)
+        request_body = build_requests_list(question_json_list)
+        self.add_question(request_body)
+        return self.form
