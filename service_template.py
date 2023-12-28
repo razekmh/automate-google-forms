@@ -1,6 +1,13 @@
 from abc import ABC, abstractmethod
 from googleapiclient.discovery import build
 from dataclasses import dataclass
+from enum import Enum
+
+
+class Award(Enum):
+    INDIVIDUAL_APPLICATIONS = (3, 4)
+    COLLABORATIVE_PROJECTS = (6, 7)
+    ALLUMNI_ASSOCIATIONS = (19, 20)
 
 
 class service_template(ABC):
@@ -10,6 +17,47 @@ class service_template(ABC):
     @abstractmethod
     def get(self, id):
         pass
+
+
+class document_service(service_template):
+    def __init__(self, credentials: dict) -> None:
+        self.service = build("docs", "v1", credentials=credentials)
+
+    def get(self, id: str) -> dict:
+        result = self.service.documents().get(documentId=id).execute()
+        return result
+
+    def get_award_info(
+        self, document: dict, award: Enum = Award.INDIVIDUAL_APPLICATIONS
+    ) -> dict:
+        index_of_title = award.value[0]
+        index_of_table = award.value[1]
+        award_info = {}
+        award_info[
+            self.__get_award_title(document, index_of_title)
+        ] = self.__get_first_column_of_table_text(document, index_of_table)
+        return award_info
+
+    def __get_award_title(self, document: dict, line: int) -> str:
+        return document["body"]["content"][line]["paragraph"]["elements"][0]["textRun"][
+            "content"
+        ].strip()
+
+    def __get_first_column_of_table_text(
+        self, document: dict, index_of_table: int
+    ) -> list:
+        """
+        Returns a list of strings from the first column of a Google Doc
+        """
+        table = document["body"]["content"][index_of_table]["table"]
+        first_column = table["tableRows"]
+        first_column_text = [
+            element["tableCells"][0]["content"][0]["paragraph"]["elements"][0][
+                "textRun"
+            ]["content"].strip()
+            for element in first_column
+        ]
+        return first_column_text[1:]
 
 
 class form_service(service_template):

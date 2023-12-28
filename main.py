@@ -1,14 +1,22 @@
 # %%
 from cred import get_credentials
-from service_template import form_service, drive_service, sheet_service, form_handler
+from service_template import (
+    form_service,
+    drive_service,
+    sheet_service,
+    form_handler,
+    document_service,
+    Award,
+)
 from utils import convert_sheet_data_to_df
-from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION
+from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION, DOCUMENT_ID
 
 # %%
 # Create service instances with credentials
 form_service_instance = form_service(get_credentials())
 drive_service_instance = drive_service(get_credentials())
 sheet_service_instance = sheet_service(get_credentials())
+document_service_instance = document_service(get_credentials())
 # %%
 # Create a form
 form = form_handler(form_service_instance, form_title="Test Form")
