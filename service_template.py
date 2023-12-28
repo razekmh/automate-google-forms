@@ -12,6 +12,15 @@ class service_template(ABC):
         pass
 
 
+class document_service(service_template):
+    def __init__(self, credentials: dict) -> None:
+        self.service = build("docs", "v1", credentials=credentials)
+
+    def get(self, id: str) -> dict:
+        result = self.service.documents().get(documentId=id).execute()
+        return result
+
+
 class form_service(service_template):
     def __init__(self, credentials: dict) -> None:
         self.service = build("forms", "v1", credentials=credentials)
