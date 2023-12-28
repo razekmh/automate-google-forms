@@ -8,8 +8,15 @@ from service_template import (
     document_service,
     Award,
 )
-from utils import convert_sheet_data_to_df
+from utils import (
+    convert_sheet_data_to_df,
+    make_form,
+    build_requests_list,
+    build_json_for_grid_question,
+    process_df,
+)
 from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION, DOCUMENT_ID
+import pandas as pd
 
 # %%
 # Create service instances with credentials
@@ -88,7 +95,7 @@ NEW_GRID_QUESTION = {
                         ],
                     },
                 },
-                "location": {"index": "INDEX"},
+                "location": {"index": 0},
             }
         }
     ]
@@ -133,11 +140,7 @@ UPDATE_QUESTION = {
 updated_questions = form.update_question(UPDATE_QUESTION)
 
 # %%
-print(
-    convert_sheet_data_to_df(
-        sheet_service_instance.get_data_from_sheet(
-            SPREADSHEET_ID, RANGE, MAJOR_DIMENSION
-        )
-    )
+df = convert_sheet_data_to_df(
+    sheet_service_instance.get_data_from_sheet(SPREADSHEET_ID, RANGE, MAJOR_DIMENSION)
 )
 # %%
