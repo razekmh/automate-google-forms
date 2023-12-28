@@ -4,10 +4,10 @@ from dataclasses import dataclass
 from enum import Enum
 
 
-class Table(Enum):
-    FIRST_TABLE = 4
-    SECOND_TABLE = 7
-    THIRD_TABLE = 20
+class Award(Enum):
+    INDIVIDUAL_APPLICATIONS = (3, 4)
+    COLLABORATIVE_PROJECTS = (6, 7)
+    ALLUMNI_ASSOCIATIONS = (19, 20)
 
 
 class service_template(ABC):
@@ -27,22 +27,37 @@ class document_service(service_template):
         result = self.service.documents().get(documentId=id).execute()
         return result
 
-    def get_first_column_of_table_text(
-        self, document: dict, requested_table: Table = Table.FIRST_TABLE
+    def get_award_info(
+        self, document: dict, award: Enum = Award.INDIVIDUAL_APPLICATIONS
+    ) -> dict:
+        index_of_title = award.value[0]
+        index_of_table = award.value[1]
+        award_info = {}
+        award_info[
+            self.__get_award_title(document, index_of_title)
+        ] = self.__get_first_column_of_table_text(document, index_of_table)
+        return award_info
+
+    def __get_award_title(self, document: dict, line: int) -> str:
+        return document["body"]["content"][line]["paragraph"]["elements"][0]["textRun"][
+            "content"
+        ].strip()
+
+    def __get_first_column_of_table_text(
+        self, document: dict, index_of_table: int
     ) -> list:
         """
         Returns a list of strings from the first column of a Google Doc
         """
-        index_of_table = requested_table.value
         table = document["body"]["content"][index_of_table]["table"]
         first_column = table["tableRows"]
         first_column_text = [
             element["tableCells"][0]["content"][0]["paragraph"]["elements"][0][
                 "textRun"
-            ]["content"]
+            ]["content"].strip()
             for element in first_column
         ]
-        return first_column_text
+        return first_column_text[1:]
 
 
 class form_service(service_template):
