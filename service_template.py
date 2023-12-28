@@ -27,7 +27,7 @@ class document_service(service_template):
         result = self.service.documents().get(documentId=id).execute()
         return result
 
-    def get_first_column_text(
+    def get_first_column_of_table_text(
         self, document: dict, requested_table: Table = Table.FIRST_TABLE
     ) -> list:
         """
