@@ -109,3 +109,12 @@ def get_questions_with_question_ids(form_id: str, form_service_instance) -> dict
             questions_and_ids[question["questionId"]] = question["rowQuestion"]["title"]
         dict_of_questions_and_candidates[name_of_candidate] = questions_and_ids
     return dict_of_questions_and_candidates
+
+
+def get_answers_with_question_ids(form_id: str, form_service_instance) -> dict:
+    dict_of_answers_and_candidates = {}
+    responses = (
+        form_service_instance.service.forms().responses().list(formId=form_id).execute()
+    )
+
+    return responses
