@@ -99,11 +99,11 @@ def convert_form_type_enum_to_award_enum(form_title: Enum):
         return Award.INDIVIDUAL_APPLICATIONS
 
 
-def build_json_for_text_question(INDEX=0):
+def build_json_for_text_question(INDEX=0, text_question_body="Judge Name"):
     NEW_TEXT_QUESTION = {
         "createItem": {
             "item": {
-                "title": "Judge Name",
+                "title": text_question_body,
                 "questionItem": {
                     "question": {
                         "required": True,
