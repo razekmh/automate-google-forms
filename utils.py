@@ -97,3 +97,38 @@ def convert_form_type_enum_to_award_enum(form_title: Enum):
         return Award.ALLUMNI_ASSOCIATIONS
     else:
         return Award.INDIVIDUAL_APPLICATIONS
+
+
+def build_json_for_text_question(INDEX=0):
+    NEW_TEXT_QUESTION = {
+        "createItem": {
+            "item": {
+                "title": "Judge Name",
+                "questionItem": {
+                    "question": {
+                        "required": True,
+                        "textQuestion": {
+                            {
+                                "paragraph": False,
+                            }
+                        },
+                    }
+                },
+            },
+            "location": {"index": INDEX},
+        }
+    }
+    return NEW_TEXT_QUESTION
+
+
+def build_json_for_select_question(INDEX=0):
+    NEW_SELECT_QUESTION = {
+        "createItem": {
+            "item": {
+                "title": "Judge Name",
+                "question": {"text": {"type": "TEXT"}},
+            },
+            "location": {"index": INDEX},
+        }
+    }
+    return NEW_SELECT_QUESTION
