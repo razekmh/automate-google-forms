@@ -98,7 +98,7 @@ class form_service(service_template):
                 "documentTitle": documentTitle,
             }
         }
-        form = self.service.service.forms().create(body=NEW_FORM).execute()
+        form = self.service.forms().create(body=NEW_FORM).execute()
         return form
 
 
@@ -153,18 +153,34 @@ class sheet_service(service_template):
 
 class form_handler:
     def __init__(
-        self, form_service, form_title="Empty Form", documentTitle="document form"
+        self,
+        form_title="Empty Form",
+        documentTitle="document form",
+        form_service_instance=None,
+        formId=None,
     ):
-        self.form_service = form_service
-        NEW_FORM = {
-            "info": {
-                "title": form_title,
-                "documentTitle": documentTitle,
+
+        if not form_service_instance:
+            self.form_service = form_service
+        else:
+            self.form_service = form_service_instance
+
+        if formId:
+            self.formId = formId
+            print(f"form captured with id {self.formId}")
+
+        else:
+            NEW_FORM = {
+                "info": {
+                    "title": form_title,
+                    "documentTitle": documentTitle,
+                }
             }
-        }
-        self.form = self.form_service.service.forms().create(body=NEW_FORM).execute()
-        self.form_id = self.form["formId"]
-        print(f"Form created: {self.form_id}")
+            form_object = (
+                self.form_service.service.forms().create(body=NEW_FORM).execute()
+            )
+            self.formId = form_object["formId"]
+            print(f"form created with id {self.formId}")
 
     def __repr__(self) -> str:
         return f"Form Object: {str(self.form)}"
@@ -173,11 +189,11 @@ class form_handler:
         pass
 
     def delete(self):
-        result = self.form_service.service.forms().delete(formId=self.form_id).execute()
+        result = self.form_service.service.forms().delete(formId=self.formId).execute()
         return result
 
     def get(self):
-        result = self.form_service.service.forms().get(formId=self.form_id).execute()
+        result = self.form_service.service.forms().get(formId=self.formId).execute()
         return result
 
     def update_form_title(self, new_form_title):
@@ -193,7 +209,7 @@ class form_handler:
         }
         updated_form = (
             self.form_service.service.forms()
-            .batchUpdate(formId=self.form_id, body=UPDATE_FORM)
+            .batchUpdate(formId=self.formId, body=UPDATE_FORM)
             .execute()
         )
 
@@ -202,7 +218,7 @@ class form_handler:
     def add_question(self, question):
         question_setting = (
             self.form_service.service.forms()
-            .batchUpdate(formId=self.form_id, body=question)
+            .batchUpdate(formId=self.formId, body=question)
             .execute()
         )
         return question_setting
@@ -210,7 +226,7 @@ class form_handler:
     def update_question(self, question):
         question_setting = (
             self.form_service.service.forms()
-            .batchUpdate(formId=self.form_id, body=question)
+            .batchUpdate(formId=self.formId, body=question)
             .execute()
         )
         return question_setting
@@ -223,7 +239,7 @@ class form_handler:
         responses = (
             self.form_service.service.forms()
             .responses()
-            .list(formId=self.form_id)
+            .list(formId=self.formId)
             .execute()
         )
         return responses
