@@ -33,7 +33,7 @@ group_dataframes_of_applicatants = process_df(
 )
 # %%
 # Create a form
-form = form_handler(form_service_instance, form_title="Test Form")
+form = form_handler(form_service_instance=form_service_instance, form_title="Test Form")
 # %%
 # make award form
 form.create_award_form(
