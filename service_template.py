@@ -1,18 +1,20 @@
 from abc import ABC, abstractmethod
-from googleapiclient.discovery import build
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
+
+import pandas as pd
+from googleapiclient.discovery import build
+
+from cred import get_credentials
+from settings import DOCUMENT_ID
 from utils import (
     build_json_for_grid_question,
+    build_json_for_select_question,
+    build_json_for_text_question,
     build_requests_list,
     convert_form_type_enum_to_award_enum,
-    build_json_for_text_question,
-    build_json_for_select_question,
-    Award,
 )
-import pandas as pd
-from settings import DOCUMENT_ID
-from cred import get_credentials
 
 
 class Award(Enum):
@@ -287,3 +289,76 @@ class form_handler:
         self.add_question(build_requests_list(question_json_list))
 
         return self.form
+
+    def get_questions_with_question_ids(self) -> pd.core.frame.DataFrame:
+        form_content = self.form_service.get(formId=self.formId)
+        condidates_questions_dict = defaultdict(list)
+        for item in form_content["items"]:
+            if "questionGroupItem" not in item.keys():
+                condidates_questions_dict[item["title"]].append(
+                    item["questionItem"]["question"]["questionId"]
+                )
+            else:
+                name_of_candidate = item["title"]
+                condidates_questions_dict["candidate"].append(name_of_candidate)
+                for question in item["questionGroupItem"]["questions"]:
+                    condidates_questions_dict[question["rowQuestion"]["title"]].append(
+                        question["questionId"]
+                    )
+        # expand the affliation and judge name columns to match the length of
+        # the other columns
+        max_length = max(len(v) for v in condidates_questions_dict.values())
+        for key, value in condidates_questions_dict.items():
+            if len(value) < max_length:
+                condidates_questions_dict[key] *= max_length
+        condidates_questions_df = pd.DataFrame.from_dict(condidates_questions_dict)
+        return condidates_questions_df
+
+    def get_responses_with_question_ids(self) -> dict:
+        responses = self.get_responses()
+        responses_with_question_ids = {}
+        for response in responses["responses"]:
+            answers_with_question_ids = {}
+            for question_key in list(response["answers"].keys()):
+
+                answers_with_question_ids[question_key] = response["answers"][
+                    question_key
+                ]["textAnswers"]["answers"][0]["value"]
+
+            responses_with_question_ids[
+                response["responseId"]
+            ] = answers_with_question_ids
+        return responses_with_question_ids
+
+    def map_responses_to_questions(self) -> pd.core.frame.DataFrame:
+        responses_with_question_ids = self.get_responses_with_question_ids()
+        condidates_questions_df = self.get_questions_with_question_ids()
+        list_of_response_dfs = []
+        for _, response in responses_with_question_ids.items():
+            temp_response_df = None
+            temp_response_df = condidates_questions_df.replace(
+                to_replace=response, inplace=False
+            )
+            list_of_response_dfs.append(temp_response_df)
+        responses_df = pd.concat(list_of_response_dfs)
+        return responses_df
+
+    def get_candidates_by_rank(self) -> pd.core.frame.DataFrame:
+        candidates_mean_makes_df = {}
+        responses_df = self.map_responses_to_questions()
+        # convert the responses to numeric values
+        responses_df_numeric = responses_df.apply(
+            pd.to_numeric, errors="coerce"
+        ).fillna(responses_df)
+
+        # group by candidate and calculate the mean of each candidate
+        responses_df_numeric_group = responses_df_numeric.groupby("candidate")
+        for candidate, df in responses_df_numeric_group:
+            df["mean_per_judge"] = df.select_dtypes("number").mean(axis=1)
+            candidates_mean_makes_df[candidate] = df["mean_per_judge"].mean()
+        candidates_mean_makes_df = pd.DataFrame.from_dict(
+            candidates_mean_makes_df, orient="index"
+        )
+
+        candidates_mean_makes_df.sort_values(by=0, ascending=False, inplace=True)
+        return candidates_mean_makes_df

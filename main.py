@@ -1,21 +1,14 @@
 # %%
 from cred import get_credentials
 from service_template import (
-    form_service,
-    drive_service,
-    sheet_service,
-    form_handler,
     document_service,
+    drive_service,
+    form_handler,
+    form_service,
+    sheet_service,
 )
-from utils import (
-    convert_sheet_data_to_df,
-    process_df,
-    get_questions_with_question_ids,
-    Award,
-    Form_Type,
-)
-from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION, DOCUMENT_ID
-import pandas as pd
+from settings import MAJOR_DIMENSION, RANGE, SPREADSHEET_ID
+from utils import Form_Type, convert_sheet_data_to_df, process_df
 
 # %%
 # Create service instances with credentials
@@ -33,10 +26,23 @@ group_dataframes_of_applicatants = process_df(
     )
 )
 # %%
-# Create a form
-form = form_handler(form_service_instance=form_service_instance, form_title="Test Form")
+# # Create a form
+# form = form_handler(form_service_instance=form_service_instance, form_title="Test Form")
+# # %%
+# # make award form
+# form.create_award_form(
+#     group_dataframes_of_applicatants, Form_Type.PROJECT, document_service_instance
+# )
 # %%
-# make award form
-form.create_award_form(
-    group_dataframes_of_applicatants, Form_Type.PROJECT, document_service_instance
-)
+# create all forms
+for form_type in Form_Type:
+    form = form_handler(
+        form_service_instance=form_service_instance,
+        form_title=form_type.value,
+        documentTitle=str(form_type.value) + " document",
+    )
+    form.create_award_form(
+        group_dataframes_of_applicatants, form_type, document_service_instance
+    )
+    print("Created form for: ", form_type.value, " form url", form.get_form_url())
+# %%
