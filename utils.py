@@ -1,6 +1,6 @@
-import pandas as pd
-from settings import SPREADSHEET_ID, RANGE, MAJOR_DIMENSION, DOCUMENT_ID
 from enum import Enum
+
+import pandas as pd
 
 
 class Award(Enum):
