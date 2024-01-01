@@ -6,6 +6,8 @@ from utils import (
     build_json_for_grid_question,
     build_requests_list,
     convert_form_type_enum_to_award_enum,
+    build_json_for_text_question,
+    build_json_for_select_question,
     Award,
 )
 import pandas as pd
@@ -260,10 +262,15 @@ class form_handler:
         form_title: Enum,
         document_service_instance: document_service,
     ):
-        self.update_form_title(form_title.value)
+        # build base objects for the form
         document_content = document_service_instance.get(DOCUMENT_ID)
         award_enum = convert_form_type_enum_to_award_enum(form_title)
         critria = document_service_instance.get_award_info(document_content, award_enum)
+
+        # update the form title
+        self.update_form_title(form_title.value)
+
+        # build questions list for the form
         question_json_list = []
         dataframe = group_dataframes_of_applicatants.get_group(
             (award_enum.value[2], form_title.value)
@@ -273,6 +280,10 @@ class form_handler:
                 list(critria.values())[0], name
             )
             question_json_list.append(question_json)
-        request_body = build_requests_list(question_json_list)
-        self.add_question(request_body)
+
+        question_json_list.append(build_json_for_select_question())
+        question_json_list.append(build_json_for_text_question())
+
+        self.add_question(build_requests_list(question_json_list))
+
         return self.form
