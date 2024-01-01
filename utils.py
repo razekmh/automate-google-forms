@@ -108,9 +108,7 @@ def build_json_for_text_question(INDEX=0, text_question_body="Judge Name"):
                     "question": {
                         "required": True,
                         "textQuestion": {
-                            {
-                                "paragraph": False,
-                            }
+                            "paragraph": False,
                         },
                     }
                 },
@@ -121,14 +119,27 @@ def build_json_for_text_question(INDEX=0, text_question_body="Judge Name"):
     return NEW_TEXT_QUESTION
 
 
-def build_json_for_select_question(INDEX=0):
-    NEW_SELECT_QUESTION = {
+def build_json_for_select_question(INDEX=0, choice_question_body="Affiliation"):
+    NEW_CHOICE_QUESTION = {
         "createItem": {
             "item": {
-                "title": "Judge Name",
-                "question": {"text": {"type": "TEXT"}},
+                "title": choice_question_body,
+                "questionItem": {
+                    "question": {
+                        "required": True,
+                        "choiceQuestion": {
+                            "type": "DROP_DOWN",
+                            "options": [
+                                {"value": "secretariat"},
+                                {"value": "fcdo"},
+                                {"value": "caa"},
+                            ],
+                            "shuffle": False,
+                        },
+                    }
+                },
             },
             "location": {"index": INDEX},
         }
     }
-    return NEW_SELECT_QUESTION
+    return NEW_CHOICE_QUESTION
