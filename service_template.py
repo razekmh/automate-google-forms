@@ -6,10 +6,13 @@ from utils import (
     build_json_for_grid_question,
     build_requests_list,
     convert_form_type_enum_to_award_enum,
+    build_json_for_text_question,
+    build_json_for_select_question,
     Award,
 )
 import pandas as pd
 from settings import DOCUMENT_ID
+from cred import get_credentials
 
 
 class Award(Enum):
@@ -98,7 +101,7 @@ class form_service(service_template):
                 "documentTitle": documentTitle,
             }
         }
-        form = self.service.service.forms().create(body=NEW_FORM).execute()
+        form = self.service.forms().create(body=NEW_FORM).execute()
         return form
 
 
@@ -151,33 +154,54 @@ class sheet_service(service_template):
         return result
 
 
+@dataclass()
 class form_handler:
     def __init__(
-        self, form_service, form_title="Empty Form", documentTitle="document form"
+        self,
+        form_title="Empty Form",
+        documentTitle="document form",
+        form_service_instance=None,
+        formId=None,
     ):
-        self.form_service = form_service
-        NEW_FORM = {
-            "info": {
-                "title": form_title,
-                "documentTitle": documentTitle,
-            }
-        }
-        self.form = self.form_service.service.forms().create(body=NEW_FORM).execute()
-        self.form_id = self.form["formId"]
-        print(f"Form created: {self.form_id}")
 
-    def __repr__(self) -> str:
-        return f"Form Object: {str(self.form)}"
+        if not form_service_instance:
+            self.form_service = form_service(get_credentials())
+        else:
+            self.form_service = form_service_instance
+
+        if formId:
+            self.formId = formId
+            print(f"form captured with id {self.formId}")
+
+        else:
+            NEW_FORM = {
+                "info": {
+                    "title": form_title,
+                    "documentTitle": documentTitle,
+                }
+            }
+            form_object = (
+                self.form_service.service.forms().create(body=NEW_FORM).execute()
+            )
+            self.formId = form_object["formId"]
+            print(f"form created with id {self.formId}")
+
+        self.__post_init__()
 
     def __post_init__(self):
-        pass
+        self.form = self.get()
+        self.form_url = self.get_form_url()
+        self.revisionId = self.get_revisionId()
+
+    def __repr__(self) -> str:
+        return f"Form Object: {str(self.formId)}"
 
     def delete(self):
-        result = self.form_service.service.forms().delete(formId=self.form_id).execute()
+        result = self.form_service.service.forms().delete(formId=self.formId).execute()
         return result
 
     def get(self):
-        result = self.form_service.service.forms().get(formId=self.form_id).execute()
+        result = self.form_service.service.forms().get(formId=self.formId).execute()
         return result
 
     def update_form_title(self, new_form_title):
@@ -193,7 +217,7 @@ class form_handler:
         }
         updated_form = (
             self.form_service.service.forms()
-            .batchUpdate(formId=self.form_id, body=UPDATE_FORM)
+            .batchUpdate(formId=self.formId, body=UPDATE_FORM)
             .execute()
         )
 
@@ -202,7 +226,7 @@ class form_handler:
     def add_question(self, question):
         question_setting = (
             self.form_service.service.forms()
-            .batchUpdate(formId=self.form_id, body=question)
+            .batchUpdate(formId=self.formId, body=question)
             .execute()
         )
         return question_setting
@@ -210,7 +234,7 @@ class form_handler:
     def update_question(self, question):
         question_setting = (
             self.form_service.service.forms()
-            .batchUpdate(formId=self.form_id, body=question)
+            .batchUpdate(formId=self.formId, body=question)
             .execute()
         )
         return question_setting
@@ -219,11 +243,15 @@ class form_handler:
         form_info = self.get()
         return form_info["responderUri"]
 
+    def get_revisionId(self):
+        form_info = self.get()
+        return form_info["revisionId"]
+
     def get_responses(self):
         responses = (
             self.form_service.service.forms()
             .responses()
-            .list(formId=self.form_id)
+            .list(formId=self.formId)
             .execute()
         )
         return responses
@@ -234,10 +262,15 @@ class form_handler:
         form_title: Enum,
         document_service_instance: document_service,
     ):
-        self.update_form_title(form_title.value)
+        # build base objects for the form
         document_content = document_service_instance.get(DOCUMENT_ID)
         award_enum = convert_form_type_enum_to_award_enum(form_title)
         critria = document_service_instance.get_award_info(document_content, award_enum)
+
+        # update the form title
+        self.update_form_title(form_title.value)
+
+        # build questions list for the form
         question_json_list = []
         dataframe = group_dataframes_of_applicatants.get_group(
             (award_enum.value[2], form_title.value)
@@ -247,6 +280,10 @@ class form_handler:
                 list(critria.values())[0], name
             )
             question_json_list.append(question_json)
-        request_body = build_requests_list(question_json_list)
-        self.add_question(request_body)
+
+        question_json_list.append(build_json_for_select_question())
+        question_json_list.append(build_json_for_text_question())
+
+        self.add_question(build_requests_list(question_json_list))
+
         return self.form
