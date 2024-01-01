@@ -1,18 +1,20 @@
 from abc import ABC, abstractmethod
-from googleapiclient.discovery import build
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
+
+import pandas as pd
+from googleapiclient.discovery import build
+
+from cred import get_credentials
+from settings import DOCUMENT_ID
 from utils import (
     build_json_for_grid_question,
+    build_json_for_select_question,
+    build_json_for_text_question,
     build_requests_list,
     convert_form_type_enum_to_award_enum,
-    build_json_for_text_question,
-    build_json_for_select_question,
-    Award,
 )
-import pandas as pd
-from settings import DOCUMENT_ID
-from cred import get_credentials
 
 
 class Award(Enum):
@@ -288,15 +290,51 @@ class form_handler:
 
         return self.form
 
-    def get_questions_with_question_ids(self) -> dict:
-        dict_of_questions_and_candidates = {}
+    def get_questions_with_question_ids(self) -> pd.core.frame.DataFrame:
         form_content = self.form_service.get(formId=self.formId)
+        condidates_questions_dict = defaultdict(list)
         for item in form_content["items"]:
-            name_of_candidate = item["title"]
-            questions_and_ids = {}
-            for question in item["questionGroupItem"]["questions"]:
-                questions_and_ids[question["questionId"]] = question["rowQuestion"][
-                    "title"
-                ]
-            dict_of_questions_and_candidates[name_of_candidate] = questions_and_ids
-        return dict_of_questions_and_candidates
+            if "questionGroupItem" not in item.keys():
+                condidates_questions_dict[item["title"]].append(
+                    item["questionItem"]["question"]["questionId"]
+                )
+            else:
+                name_of_candidate = item["title"]
+                condidates_questions_dict["candidate"].append(name_of_candidate)
+                for question in item["questionGroupItem"]["questions"]:
+                    condidates_questions_dict[question["rowQuestion"]["title"]].append(
+                        question["questionId"]
+                    )
+        # expand the affliation and judge name columns to match the length of the other columns
+        max_length = max(len(v) for v in condidates_questions_dict.values())
+        for key, value in condidates_questions_dict.items():
+            if len(value) < max_length:
+                condidates_questions_dict[key] *= max_length
+        condidates_questions_df = pd.DataFrame.from_dict(condidates_questions_dict)
+        return condidates_questions_df
+
+    def get_responses_with_question_ids(self) -> dict:
+        responses = self.get_responses()
+        responses_with_question_ids = {}
+        for response in responses["responses"]:
+            answers_with_question_ids = {}
+            for question_key in list(response["answers"].keys()):
+                answers_with_question_ids[question_key] = response["answers"][
+                    question_key
+                ]["textAnswers"]["answers"][0]["value"]
+            responses_with_question_ids[
+                response["responseId"]
+            ] = answers_with_question_ids
+        return responses_with_question_ids
+
+    def map_responses_to_questions(self) -> pd.core.frame.DataFrame:
+        responses_with_question_ids = self.get_responses_with_question_ids()
+        condidates_questions_df = self.get_questions_with_question_ids()
+        list_of_response_dfs = []
+        for _, response in responses_with_question_ids.items():
+            temp_response_df = condidates_questions_df.replace(
+                to_replace=response, inplace=False
+            )
+            list_of_response_dfs.append(temp_response_df)
+        responses_df = pd.concat(list_of_response_dfs)
+        return responses_df
