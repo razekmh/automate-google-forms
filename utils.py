@@ -144,12 +144,3 @@ def build_json_for_select_question(
         }
     }
     return NEW_CHOICE_QUESTION
-
-
-def get_answers_with_question_ids(form_id: str, form_service_instance) -> dict:
-    dict_of_answers_and_candidates = {}
-    responses = (
-        form_service_instance.service.forms().responses().list(formId=form_id).execute()
-    )
-
-    return responses
