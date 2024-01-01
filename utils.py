@@ -62,7 +62,8 @@ def build_json_for_grid_question(selection_criteria, name_of_candidate, INDEX=0)
     options = [{"value": value} for value in answer_values]
     cleaned_name_of_candidate = name_of_candidate.replace("\n", " ")
     questions = [
-        {"rowQuestion": {"title": question}} for question in selection_criteria
+        {"rowQuestion": {"title": question, "required": True}}
+        for question in selection_criteria
     ]
     NEW_GRID_QUESTION = {
         "createItem": {
