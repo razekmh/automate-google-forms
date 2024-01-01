@@ -10,6 +10,7 @@ from utils import (
 )
 import pandas as pd
 from settings import DOCUMENT_ID
+from cred import get_credentials
 
 
 class Award(Enum):
@@ -151,6 +152,7 @@ class sheet_service(service_template):
         return result
 
 
+@dataclass()
 class form_handler:
     def __init__(
         self,
@@ -161,7 +163,7 @@ class form_handler:
     ):
 
         if not form_service_instance:
-            self.form_service = form_service
+            self.form_service = form_service(get_credentials())
         else:
             self.form_service = form_service_instance
 
@@ -182,11 +184,15 @@ class form_handler:
             self.formId = form_object["formId"]
             print(f"form created with id {self.formId}")
 
-    def __repr__(self) -> str:
-        return f"Form Object: {str(self.form)}"
+        self.__post_init__()
 
     def __post_init__(self):
-        pass
+        self.form = self.get()
+        self.form_url = self.get_form_url()
+        self.revisionId = self.get_revisionId()
+
+    def __repr__(self) -> str:
+        return f"Form Object: {str(self.formId)}"
 
     def delete(self):
         result = self.form_service.service.forms().delete(formId=self.formId).execute()
@@ -234,6 +240,10 @@ class form_handler:
     def get_form_url(self):
         form_info = self.get()
         return form_info["responderUri"]
+
+    def get_revisionId(self):
+        form_info = self.get()
+        return form_info["revisionId"]
 
     def get_responses(self):
         responses = (
