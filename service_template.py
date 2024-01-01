@@ -88,8 +88,8 @@ class form_service(service_template):
     def __init__(self, credentials: dict) -> None:
         self.service = build("forms", "v1", credentials=credentials)
 
-    def get(self, id: str) -> dict:
-        result = self.service.forms().get(formId=id).execute()
+    def get(self, formId: str) -> dict:
+        result = self.service.forms().get(formId=formId).execute()
         return result
 
     def create_empty_form(
