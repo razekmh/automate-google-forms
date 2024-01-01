@@ -62,7 +62,8 @@ def build_json_for_grid_question(selection_criteria, name_of_candidate, INDEX=0)
     options = [{"value": value} for value in answer_values]
     cleaned_name_of_candidate = name_of_candidate.replace("\n", " ")
     questions = [
-        {"rowQuestion": {"title": question}} for question in selection_criteria
+        {"required": True, "rowQuestion": {"title": question}}
+        for question in selection_criteria
     ]
     NEW_GRID_QUESTION = {
         "createItem": {
@@ -99,6 +100,51 @@ def convert_form_type_enum_to_award_enum(form_title: Enum):
         return Award.INDIVIDUAL_APPLICATIONS
 
 
+def build_json_for_text_question(INDEX=0, text_question_body="Judge Name"):
+    NEW_TEXT_QUESTION = {
+        "createItem": {
+            "item": {
+                "title": text_question_body,
+                "questionItem": {
+                    "question": {
+                        "required": True,
+                        "textQuestion": {
+                            "paragraph": False,
+                        },
+                    }
+                },
+            },
+            "location": {"index": INDEX},
+        }
+    }
+    return NEW_TEXT_QUESTION
+
+
+def build_json_for_select_question(
+    INDEX=0,
+    choice_question_body="Affiliation",
+    options=[{"value": "secretariat"}, {"value": "fcdo"}, {"value": "caa"}],
+):
+    NEW_CHOICE_QUESTION = {
+        "createItem": {
+            "item": {
+                "title": choice_question_body,
+                "questionItem": {
+                    "question": {
+                        "required": True,
+                        "choiceQuestion": {
+                            "type": "DROP_DOWN",
+                            "options": options,
+                            "shuffle": False,
+                        },
+                    }
+                },
+            },
+            "location": {"index": INDEX},
+        }
+    }
+    return NEW_CHOICE_QUESTION
+  
 def get_questions_with_question_ids(form_id: str, form_service_instance) -> dict:
     dict_of_questions_and_candidates = {}
     form_content = form_service_instance.get(formId=form_id)
