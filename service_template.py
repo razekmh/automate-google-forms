@@ -305,7 +305,8 @@ class form_handler:
                     condidates_questions_dict[question["rowQuestion"]["title"]].append(
                         question["questionId"]
                     )
-        # expand the affliation and judge name columns to match the length of the other columns
+        # expand the affliation and judge name columns to match the length of
+        # the other columns
         max_length = max(len(v) for v in condidates_questions_dict.values())
         for key, value in condidates_questions_dict.items():
             if len(value) < max_length:
@@ -345,9 +346,12 @@ class form_handler:
     def get_candidates_by_rank(self) -> pd.core.frame.DataFrame:
         candidates_mean_makes_df = {}
         responses_df = self.map_responses_to_questions()
+        # convert the responses to numeric values
         responses_df_numeric = responses_df.apply(
             pd.to_numeric, errors="coerce"
         ).fillna(responses_df)
+
+        # group by candidate and calculate the mean of each candidate
         responses_df_numeric_group = responses_df_numeric.groupby("candidate")
         for candidate, df in responses_df_numeric_group:
             df["mean_per_judge"] = df.select_dtypes("number").mean(axis=1)
@@ -355,5 +359,6 @@ class form_handler:
         candidates_mean_makes_df = pd.DataFrame.from_dict(
             candidates_mean_makes_df, orient="index"
         )
+
         candidates_mean_makes_df.sort_values(by=0, ascending=False, inplace=True)
         return candidates_mean_makes_df
