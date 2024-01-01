@@ -319,9 +319,11 @@ class form_handler:
         for response in responses["responses"]:
             answers_with_question_ids = {}
             for question_key in list(response["answers"].keys()):
+
                 answers_with_question_ids[question_key] = response["answers"][
                     question_key
                 ]["textAnswers"]["answers"][0]["value"]
+
             responses_with_question_ids[
                 response["responseId"]
             ] = answers_with_question_ids
@@ -332,9 +334,26 @@ class form_handler:
         condidates_questions_df = self.get_questions_with_question_ids()
         list_of_response_dfs = []
         for _, response in responses_with_question_ids.items():
+            temp_response_df = None
             temp_response_df = condidates_questions_df.replace(
                 to_replace=response, inplace=False
             )
             list_of_response_dfs.append(temp_response_df)
         responses_df = pd.concat(list_of_response_dfs)
         return responses_df
+
+    def get_candidates_by_rank(self) -> pd.core.frame.DataFrame:
+        candidates_mean_makes_df = {}
+        responses_df = self.map_responses_to_questions()
+        responses_df_numeric = responses_df.apply(
+            pd.to_numeric, errors="coerce"
+        ).fillna(responses_df)
+        responses_df_numeric_group = responses_df_numeric.groupby("candidate")
+        for candidate, df in responses_df_numeric_group:
+            df["mean_per_judge"] = df.select_dtypes("number").mean(axis=1)
+            candidates_mean_makes_df[candidate] = df["mean_per_judge"].mean()
+        candidates_mean_makes_df = pd.DataFrame.from_dict(
+            candidates_mean_makes_df, orient="index"
+        )
+        candidates_mean_makes_df.sort_values(by=0, ascending=False, inplace=True)
+        return candidates_mean_makes_df
