@@ -144,17 +144,6 @@ def build_json_for_select_question(
         }
     }
     return NEW_CHOICE_QUESTION
-  
-def get_questions_with_question_ids(form_id: str, form_service_instance) -> dict:
-    dict_of_questions_and_candidates = {}
-    form_content = form_service_instance.get(formId=form_id)
-    for item in form_content["items"]:
-        name_of_candidate = item["title"]
-        questions_and_ids = {}
-        for question in item["questionGroupItem"]["questions"]:
-            questions_and_ids[question["questionId"]] = question["rowQuestion"]["title"]
-        dict_of_questions_and_candidates[name_of_candidate] = questions_and_ids
-    return dict_of_questions_and_candidates
 
 
 def get_answers_with_question_ids(form_id: str, form_service_instance) -> dict:
