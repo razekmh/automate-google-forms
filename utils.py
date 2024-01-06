@@ -131,7 +131,7 @@ def build_json_for_select_question(
                 "title": choice_question_body,
                 "questionItem": {
                     "question": {
-                        "required": True,
+                        "required": False,
                         "choiceQuestion": {
                             "type": "DROP_DOWN",
                             "options": options,
