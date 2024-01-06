@@ -62,7 +62,7 @@ def build_json_for_grid_question(selection_criteria, name_of_candidate, INDEX=0)
     options = [{"value": value} for value in answer_values]
     cleaned_name_of_candidate = name_of_candidate.replace("\n", " ")
     questions = [
-        {"required": True, "rowQuestion": {"title": question}}
+        {"required": False, "rowQuestion": {"title": question}}
         for question in selection_criteria
     ]
     NEW_GRID_QUESTION = {
@@ -131,7 +131,7 @@ def build_json_for_select_question(
                 "title": choice_question_body,
                 "questionItem": {
                     "question": {
-                        "required": False,
+                        "required": True,
                         "choiceQuestion": {
                             "type": "DROP_DOWN",
                             "options": options,
