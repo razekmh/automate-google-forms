@@ -123,7 +123,7 @@ def build_json_for_text_question(INDEX=0, text_question_body="Judge Name"):
 def build_json_for_select_question(
     INDEX=0,
     choice_question_body="Affiliation",
-    options=[{"value": "secretariat"}, {"value": "fcdo"}, {"value": "caa"}],
+    options=[{"value": "Secretariat"}, {"value": "FCDO"}, {"value": "CAA"}],
 ):
     NEW_CHOICE_QUESTION = {
         "createItem": {
