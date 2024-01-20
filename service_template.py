@@ -123,7 +123,7 @@ class drive_service(service_template):
         )
         return result
 
-    def delete_all_forms(self) -> dict:
+    def __dete_all_forms(self) -> dict:
         forms = self.list_forms()
         for form in forms["files"]:
             self.service.files().delete(fileId=form["id"]).execute()
