@@ -39,7 +39,7 @@ class Form_Type(Enum):
     PROJECT = "Project"
 
 
-class service_template(ABC):
+class Service_template(ABC):
     def __init__(self) -> None:
         pass
 
@@ -48,7 +48,7 @@ class service_template(ABC):
         pass
 
 
-class document_service(service_template):
+class Document_service(Service_template):
     def __init__(self, credentials: dict) -> None:
         self.service = build("docs", "v1", credentials=credentials)
 
@@ -89,7 +89,7 @@ class document_service(service_template):
         return first_column_text[1:]
 
 
-class form_service(service_template):
+class Form_service(Service_template):
     def __init__(self, credentials: dict) -> None:
         self.service = build("forms", "v1", credentials=credentials)
 
@@ -110,7 +110,7 @@ class form_service(service_template):
         return form
 
 
-class drive_service(service_template):
+class Drive_service(Service_template):
     def __init__(self, credentials: dict) -> None:
         self.service = build("drive", "v3", credentials=credentials)
 
@@ -133,7 +133,7 @@ class drive_service(service_template):
         return forms
 
 
-class sheet_service(service_template):
+class Sheet_service(Service_template):
     def __init__(self, credentials: dict) -> None:
         self.service = build("sheets", "v4", credentials=credentials)
 
@@ -160,16 +160,16 @@ class sheet_service(service_template):
 
 
 @dataclass()
-class form_handler:
+class Form_handler:
     def __init__(
         self,
         form_title: str = "Empty Form",
         documentTitle: str = "document form",
-        form_service_instance: Optional[form_service] = None,
+        form_service_instance: Optional[Form_service] = None,
         formId: Optional[str] = None,
     ) -> None:
         if not form_service_instance:
-            self.form_service = form_service(get_credentials())
+            self.form_service = Form_service(get_credentials())
         else:
             self.form_service = form_service_instance
 
@@ -266,7 +266,7 @@ class form_handler:
         self,
         group_dataframes_of_applicatants: pd.core.groupby.DataFrameGroupBy,
         form_title: Enum,
-        document_service_instance: document_service,
+        document_service_instance: Document_service,
     ) -> dict:
         # build base objects for the form
         document_content = document_service_instance.get(DOCUMENT_ID)
