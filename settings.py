@@ -1,9 +1,7 @@
 from pathlib import Path
 import os
 
-# cehck if local.settings.py exists
 if Path("local_settings.py").exists():
-    # run local.settings.py
     from local_settings import push_local_settings_to_env
 
     push_local_settings_to_env()
