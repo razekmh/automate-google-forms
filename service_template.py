@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
 import pathlib
+from typing import Optional
 
 import pandas as pd
 from googleapiclient.discovery import build
@@ -39,11 +40,11 @@ class Form_Type(Enum):
 
 
 class service_template(ABC):
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @abstractmethod
-    def get(self, id):
+    def get(self, id: str) -> dict:
         pass
 
 
@@ -97,8 +98,8 @@ class form_service(service_template):
         return result
 
     def create_empty_form(
-        self, form_title="Empty Form", documentTitle="Empty Form Document"
-    ):
+        self, form_title: str = "Empty Form", documentTitle: str = "Empty Form Document"
+    ) -> dict:
         NEW_FORM = {
             "info": {
                 "title": form_title,
@@ -133,7 +134,7 @@ class drive_service(service_template):
 
 
 class sheet_service(service_template):
-    def __init__(self, credentials):
+    def __init__(self, credentials: dict) -> None:
         self.service = build("sheets", "v4", credentials=credentials)
 
     def get_data_from_sheet(
@@ -149,11 +150,11 @@ class sheet_service(service_template):
         )
         return result
 
-    def get(self, id):
+    def get(self, id: str) -> dict:
         result = self.service.spreadsheets().get(spreadsheetId=id).execute()
         return result
 
-    def list(self):
+    def list(self) -> dict:
         result = self.service.spreadsheets().list().execute()
         return result
 
@@ -162,12 +163,11 @@ class sheet_service(service_template):
 class form_handler:
     def __init__(
         self,
-        form_title="Empty Form",
-        documentTitle="document form",
-        form_service_instance=None,
-        formId=None,
-    ):
-
+        form_title: str = "Empty Form",
+        documentTitle: str = "document form",
+        form_service_instance: Optional[form_service] = None,
+        formId: Optional[str] = None,
+    ) -> None:
         if not form_service_instance:
             self.form_service = form_service(get_credentials())
         else:
@@ -192,7 +192,7 @@ class form_handler:
 
         self.__post_init__()
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.form = self.get()
         self.form_url = self.get_form_url()
         self.revisionId = self.get_revisionId()
@@ -202,15 +202,15 @@ class form_handler:
     def __repr__(self) -> str:
         return f"Form Object: {str(self.formId)}"
 
-    def delete(self):
+    def delete(self) -> dict:
         result = self.form_service.service.forms().delete(formId=self.formId).execute()
         return result
 
-    def get(self):
+    def get(self) -> dict:
         result = self.form_service.service.forms().get(formId=self.formId).execute()
         return result
 
-    def update_form_title(self, new_form_title):
+    def update_form_title(self, new_form_title: str) -> dict:
         UPDATE_FORM = {
             "requests": [
                 {
@@ -229,7 +229,7 @@ class form_handler:
 
         return updated_form
 
-    def add_question(self, question):
+    def add_question(self, question: dict) -> dict:
         question_setting = (
             self.form_service.service.forms()
             .batchUpdate(formId=self.formId, body=question)
@@ -237,7 +237,7 @@ class form_handler:
         )
         return question_setting
 
-    def update_question(self, question):
+    def update_question(self, question: dict) -> dict:
         question_setting = (
             self.form_service.service.forms()
             .batchUpdate(formId=self.formId, body=question)
@@ -245,15 +245,15 @@ class form_handler:
         )
         return question_setting
 
-    def get_form_url(self):
+    def get_form_url(self) -> str:
         form_info = self.get()
         return form_info["responderUri"]
 
-    def get_revisionId(self):
+    def get_revisionId(self) -> str:
         form_info = self.get()
         return form_info["revisionId"]
 
-    def get_responses(self):
+    def get_responses(self) -> dict:
         responses = (
             self.form_service.service.forms()
             .responses()
@@ -267,7 +267,7 @@ class form_handler:
         group_dataframes_of_applicatants: pd.core.groupby.DataFrameGroupBy,
         form_title: Enum,
         document_service_instance: document_service,
-    ):
+    ) -> dict:
         # build base objects for the form
         document_content = document_service_instance.get(DOCUMENT_ID)
         award_enum = convert_form_type_enum_to_award_enum(form_title)
@@ -329,7 +329,6 @@ class form_handler:
             for response in responses["responses"]:
                 answers_with_question_ids = {}
                 for question_key in list(response["answers"].keys()):
-
                     answers_with_question_ids[question_key] = response["answers"][
                         question_key
                     ]["textAnswers"]["answers"][0]["value"]
@@ -374,7 +373,7 @@ class form_handler:
             return responses_df
 
     def get_candidates_by_rank(self) -> pd.core.frame.DataFrame:
-        candidates_mean_makes_df = {}
+        candidates_mean_makes_dict = {}
         responses_df = self.map_responses_to_questions()
         # convert the responses to numeric values
         responses_df_numeric = responses_df.apply(
@@ -385,9 +384,9 @@ class form_handler:
         responses_df_numeric_group = responses_df_numeric.groupby("candidate")
         for candidate, df in responses_df_numeric_group:
             df["mean_per_judge"] = df.select_dtypes("number").mean(axis=1)
-            candidates_mean_makes_df[candidate] = df["mean_per_judge"].mean()
+            candidates_mean_makes_dict[candidate] = df["mean_per_judge"].mean()
         candidates_mean_makes_df = pd.DataFrame.from_dict(
-            candidates_mean_makes_df, orient="index"
+            candidates_mean_makes_dict, orient="index"
         )
 
         candidates_mean_makes_df.sort_values(by=0, ascending=False, inplace=True)

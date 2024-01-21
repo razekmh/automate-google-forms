@@ -57,7 +57,7 @@ for form_type in Form_Type:
 # %%
 
 
-def get_forms_names_and_links():
+def get_forms_names_and_links() -> list:
     drive = drive_service(get_credentials())
     forms = drive.list_forms()["files"]
     forms_names_and_links = []
