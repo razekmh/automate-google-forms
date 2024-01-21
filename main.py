@@ -1,21 +1,21 @@
 # %%
 from cred import get_credentials
 from service_template import (
-    document_service,
-    drive_service,
-    form_handler,
-    form_service,
-    sheet_service,
+    Document_service,
+    Drive_service,
+    Form_handler,
+    Form_service,
+    Sheet_service,
 )
 from settings import MAJOR_DIMENSION, RANGE, SPREADSHEET_ID
 from utils import Form_Type, convert_sheet_data_to_df, process_df
 
 # %%
 # Create service instances with credentials
-form_service_instance = form_service(get_credentials())
-drive_service_instance = drive_service(get_credentials())
-sheet_service_instance = sheet_service(get_credentials())
-document_service_instance = document_service(get_credentials())
+form_service_instance = Form_service(get_credentials())
+drive_service_instance = Drive_service(get_credentials())
+sheet_service_instance = Sheet_service(get_credentials())
+document_service_instance = Document_service(get_credentials())
 # %%
 # read the applicatants data from the google sheet
 group_dataframes_of_applicatants = process_df(
@@ -30,7 +30,7 @@ group_dataframes_of_applicatants = process_df(
 # export all forms to local csv files
 forms_ids = [form["id"] for form in drive_service_instance.list_forms()["files"]]
 for form_id in forms_ids:
-    form_instance = form_handler(formId=form_id)
+    form_instance = Form_handler(formId=form_id)
     form_instance.map_responses_to_questions()
 
 
@@ -45,7 +45,7 @@ for form_id in forms_ids:
 # %%
 # create all forms
 for form_type in Form_Type:
-    form = form_handler(
+    form = Form_handler(
         form_service_instance=form_service_instance,
         form_title=form_type.value,
         documentTitle=str(form_type.value) + " document",
@@ -58,11 +58,11 @@ for form_type in Form_Type:
 
 
 def get_forms_names_and_links() -> list:
-    drive = drive_service(get_credentials())
+    drive = Drive_service(get_credentials())
     forms = drive.list_forms()["files"]
     forms_names_and_links = []
     for form in forms:
-        form_object = form_handler(formId=form["id"])
+        form_object = Form_handler(formId=form["id"])
         forms_names_and_links.append(
             {"name": form_object.form_type, "link": form_object.get_form_url()}
         )
