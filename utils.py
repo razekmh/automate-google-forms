@@ -48,7 +48,7 @@ def process_df(df: pd.DataFrame) -> pd.core.groupby.DataFrameGroupBy:
 #     return [award_enum.value for award_enum in  enumerate(Award) if award_enum.value[2] == award_type][0]
 
 
-def make_form(form_title: Enum):
+def make_form(form_title: Enum) -> None:
     if form_title == Form_Type.PROJECT:
         pass
     elif form_title == Form_Type.ALLUMNI_ASSOCIATIONS:
@@ -57,7 +57,9 @@ def make_form(form_title: Enum):
         pass
 
 
-def build_json_for_grid_question(selection_criteria, name_of_candidate, INDEX=0):
+def build_json_for_grid_question(
+    selection_criteria: list, name_of_candidate: str, INDEX: int = 0
+) -> dict:
     answer_values = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
     options = [{"value": value} for value in answer_values]
     cleaned_name_of_candidate = name_of_candidate.replace("\n", " ")
@@ -86,12 +88,12 @@ def build_json_for_grid_question(selection_criteria, name_of_candidate, INDEX=0)
     return NEW_GRID_QUESTION
 
 
-def build_requests_list(list_of_requests):
+def build_requests_list(list_of_requests: list) -> dict:
     requests_list = {"requests": list_of_requests}
     return requests_list
 
 
-def convert_form_type_enum_to_award_enum(form_title: Enum):
+def convert_form_type_enum_to_award_enum(form_title: Enum) -> Enum:
     if form_title == Form_Type.PROJECT:
         return Award.COLLABORATIVE_PROJECTS
     elif form_title == Form_Type.ALLUMNI_ASSOCIATIONS:
@@ -100,7 +102,9 @@ def convert_form_type_enum_to_award_enum(form_title: Enum):
         return Award.INDIVIDUAL_APPLICATIONS
 
 
-def build_json_for_text_question(INDEX=0, text_question_body="Judge Name"):
+def build_json_for_text_question(
+    INDEX: int = 0, text_question_body: str = "Judge Name"
+) -> dict:
     NEW_TEXT_QUESTION = {
         "createItem": {
             "item": {
@@ -121,10 +125,14 @@ def build_json_for_text_question(INDEX=0, text_question_body="Judge Name"):
 
 
 def build_json_for_select_question(
-    INDEX=0,
-    choice_question_body="Affiliation",
-    options=[{"value": "Secretariat"}, {"value": "FCDO"}, {"value": "CAA"}],
-):
+    INDEX: int = 0,
+    choice_question_body: str = "Affiliation",
+    options: list[dict[str, str]] = [
+        {"value": "Secretariat"},
+        {"value": "FCDO"},
+        {"value": "CAA"},
+    ],
+) -> dict:
     NEW_CHOICE_QUESTION = {
         "createItem": {
             "item": {
