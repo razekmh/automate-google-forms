@@ -1,0 +1,28 @@
+[project]
+name = "CAA forms automation"
+version = "0.1.0"
+description = "Build CAA forms and collect submissions"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+classifiers = [
+    "Programming Language :: Python :: 3"
+]
+dependencies = [
+    "google-api-python-client==2.111.*",
+    "google-auth==2.25.*"
+    ]
+[project.optional-dependencies]
+test = [
+    "pytest==7.4.*"
+]
+
+[project.scripts]
+caa_forms = "caa_forms.main:main"
+
+[project.urls]
+"Homepage" = "https://github.com/razekmh/automate-google-forms"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
