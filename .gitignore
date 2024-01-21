@@ -4,5 +4,4 @@ formenv/*
 *.pyc
 local_settings.py
 data/*
-node_modules/*
 ```
