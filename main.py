@@ -18,7 +18,7 @@ def export_all_forms_to_csv(drive_service_instance: Drive_service) -> None:
     forms_ids = [form["id"] for form in drive_service_instance.list_forms()["files"]]
     for form_id in forms_ids:
         form_instance = Form_handler(formId=form_id)
-        form_instance.map_responses_to_questions()
+        form_instance.export_all_responses_to_csv()
 
 
 def main() -> None:

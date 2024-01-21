@@ -198,7 +198,7 @@ class Form_handler:
         self.form_url = self.get_form_url()
         self.revisionId = self.get_revisionId()
         self.form_type = self.get()["info"]["title"]
-        print(self.form_type)
+        # print(self.form_type)
 
     def __repr__(self) -> str:
         return f"Form Object: {str(self.formId)}"
@@ -345,7 +345,7 @@ class Form_handler:
             print(f"No responses yet for form [{self.formId}]")
             return {}
 
-    def map_responses_to_questions(self) -> pd.core.frame.DataFrame:
+    def __build_list_of_response_dfs(self) -> pd.core.frame.DataFrame:
         responses_with_question_ids = self.get_responses_with_question_ids()
         condidates_questions_df = self.get_questions_with_question_ids()
         list_of_response_dfs = []
@@ -355,35 +355,26 @@ class Form_handler:
         ):
             for _, response in responses_with_question_ids.items():
                 temp_response_df = None
-                print(condidates_questions_df)
-                print(response)
+                # print(condidates_questions_df)
+                # print(response)
                 temp_response_df = condidates_questions_df.replace(
                     to_replace=response, inplace=False
                 )
                 list_of_response_dfs.append(temp_response_df)
             responses_df = pd.concat(list_of_response_dfs)
-            current_file_path = pathlib.Path(__file__).parent.absolute()
-            file_name = (
-                "responses_"
-                + str(datetime.now().isoformat()).replace(":", "_")
-                + "_"
-                + str(self.form_type)
-                + ".csv"
-            )
-            responses_df.to_csv(current_file_path / "data" / file_name)
-            return responses_df
+            # convert the responses to numeric values
+            responses_df_numeric = responses_df.apply(
+                pd.to_numeric, errors="coerce"
+            ).fillna(responses_df)
+            return responses_df_numeric
 
-    def get_candidates_by_rank(self) -> pd.core.frame.DataFrame:
+    def __get_candidates_by_rank(self) -> pd.core.frame.DataFrame:
         candidates_mean_makes_dict = {}
-        responses_df = self.map_responses_to_questions()
-        # convert the responses to numeric values
-        responses_df_numeric = responses_df.apply(
-            pd.to_numeric, errors="coerce"
-        ).fillna(responses_df)
+        responses_df = self.__build_list_of_response_dfs()
 
         # group by candidate and calculate the mean of each candidate
-        responses_df_numeric_group = responses_df_numeric.groupby("candidate")
-        for candidate, df in responses_df_numeric_group:
+        responses_df_group = responses_df.groupby("candidate")
+        for candidate, df in responses_df_group:
             df["mean_per_judge"] = df.select_dtypes("number").mean(axis=1)
             candidates_mean_makes_dict[candidate] = df["mean_per_judge"].mean()
         candidates_mean_makes_df = pd.DataFrame.from_dict(
@@ -391,4 +382,27 @@ class Form_handler:
         )
 
         candidates_mean_makes_df.sort_values(by=0, ascending=False, inplace=True)
+        self.__save_dataframes_to_csv(candidates_mean_makes_df, "rank")
         return candidates_mean_makes_df
+
+    def __save_dataframes_to_csv(
+        self, df: pd.core.frame.DataFrame, df_type: str = "responses"
+    ) -> None:
+        current_file_path = pathlib.Path(__file__).parent.absolute()
+        file_name = (
+            df_type
+            + "_"
+            + str(datetime.now().isoformat()).replace(":", "_")
+            + "_"
+            + str(self.form_type)
+            + ".csv"
+        )
+        df.to_csv(current_file_path / "data" / file_name)
+
+    def export_all_responses_to_csv(self) -> None:
+        responses_df = self.__build_list_of_response_dfs()
+        self.__save_dataframes_to_csv(responses_df, "responses")
+
+    def export_candidates_ranking_to_csv(self) -> None:
+        candidates_mean_makes_df = self.__get_candidates_by_rank()
+        self.__save_dataframes_to_csv(candidates_mean_makes_df, "rank")
