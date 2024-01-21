@@ -21,9 +21,21 @@ def export_all_forms_to_csv(drive_service_instance: Drive_service) -> None:
         form_instance.export_all_responses_to_csv()
 
 
+def export_ranking_to_csv(drive_service_instance: Drive_service) -> None:
+    forms_ids = [form["id"] for form in drive_service_instance.list_forms()["files"]]
+    for form_id in forms_ids:
+        form_instance = Form_handler(formId=form_id)
+        form_instance.export_candidates_ranking_to_csv()
+
+
 def main() -> None:
     Parser = ArgumentParser(description="")
-    Parser.add_argument("-a", "--action", choices=["export_all", "create_all"])
+    Parser.add_argument(
+        "-a",
+        "--action",
+        choices=["export_all_candidates", "create_all", "export_ranking"],
+        required=True,
+    )
     args = Parser.parse_args()
 
     # Create service instances with credentials
@@ -36,6 +48,10 @@ def main() -> None:
         export_all_forms_to_csv(drive_service_instance)
     elif args.action == "create_all":
         pass
+    elif args.action == "export_ranking":
+        export_ranking_to_csv(drive_service_instance)
+    else:
+        print("Invalid action")
 
 
 if __name__ == "__main__":

@@ -373,17 +373,18 @@ class Form_handler:
         responses_df = self.__build_list_of_response_dfs()
 
         # group by candidate and calculate the mean of each candidate
-        responses_df_group = responses_df.groupby("candidate")
-        for candidate, df in responses_df_group:
-            df["mean_per_judge"] = df.select_dtypes("number").mean(axis=1)
-            candidates_mean_makes_dict[candidate] = df["mean_per_judge"].mean()
-        candidates_mean_makes_df = pd.DataFrame.from_dict(
-            candidates_mean_makes_dict, orient="index"
-        )
+        if responses_df is not None:  # if the dataframe is not empty
+            responses_df_group = responses_df.groupby("candidate")
+            for candidate, df in responses_df_group:
+                df["mean_per_judge"] = df.select_dtypes("number").mean(axis=1)
+                candidates_mean_makes_dict[candidate] = df["mean_per_judge"].mean()
+            candidates_mean_makes_df = pd.DataFrame.from_dict(
+                candidates_mean_makes_dict, orient="index"
+            )
 
-        candidates_mean_makes_df.sort_values(by=0, ascending=False, inplace=True)
-        self.__save_dataframes_to_csv(candidates_mean_makes_df, "rank")
-        return candidates_mean_makes_df
+            candidates_mean_makes_df.sort_values(by=0, ascending=False, inplace=True)
+            self.__save_dataframes_to_csv(candidates_mean_makes_df, "rank")
+            return candidates_mean_makes_df
 
     def __save_dataframes_to_csv(
         self, df: pd.core.frame.DataFrame, df_type: str = "responses"
@@ -405,4 +406,5 @@ class Form_handler:
 
     def export_candidates_ranking_to_csv(self) -> None:
         candidates_mean_makes_df = self.__get_candidates_by_rank()
-        self.__save_dataframes_to_csv(candidates_mean_makes_df, "rank")
+        if candidates_mean_makes_df is not None:
+            self.__save_dataframes_to_csv(candidates_mean_makes_df, "rank")
