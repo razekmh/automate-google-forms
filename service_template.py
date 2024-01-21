@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
+from datetime import datetime
+import pathlib
 
 import pandas as pd
 from googleapiclient.discovery import build
@@ -123,7 +125,7 @@ class drive_service(service_template):
         )
         return result
 
-    def delete_all_forms(self) -> dict:
+    def __delete_all_forms(self) -> dict:
         forms = self.list_forms()
         for form in forms["files"]:
             self.service.files().delete(fileId=form["id"]).execute()
@@ -194,6 +196,8 @@ class form_handler:
         self.form = self.get()
         self.form_url = self.get_form_url()
         self.revisionId = self.get_revisionId()
+        self.form_type = self.get()["info"]["title"]
+        print(self.form_type)
 
     def __repr__(self) -> str:
         return f"Form Object: {str(self.formId)}"
@@ -293,55 +297,81 @@ class form_handler:
     def get_questions_with_question_ids(self) -> pd.core.frame.DataFrame:
         form_content = self.form_service.get(formId=self.formId)
         condidates_questions_dict = defaultdict(list)
-        for item in form_content["items"]:
-            if "questionGroupItem" not in item.keys():
-                condidates_questions_dict[item["title"]].append(
-                    item["questionItem"]["question"]["questionId"]
-                )
-            else:
-                name_of_candidate = item["title"]
-                condidates_questions_dict["candidate"].append(name_of_candidate)
-                for question in item["questionGroupItem"]["questions"]:
-                    condidates_questions_dict[question["rowQuestion"]["title"]].append(
-                        question["questionId"]
+        try:
+            for item in form_content["items"]:
+                if "questionGroupItem" not in item.keys():
+                    condidates_questions_dict[item["title"]].append(
+                        item["questionItem"]["question"]["questionId"]
                     )
-        # expand the affliation and judge name columns to match the length of
-        # the other columns
-        max_length = max(len(v) for v in condidates_questions_dict.values())
-        for key, value in condidates_questions_dict.items():
-            if len(value) < max_length:
-                condidates_questions_dict[key] *= max_length
-        condidates_questions_df = pd.DataFrame.from_dict(condidates_questions_dict)
-        return condidates_questions_df
+                else:
+                    name_of_candidate = item["title"]
+                    condidates_questions_dict["candidate"].append(name_of_candidate)
+                    for question in item["questionGroupItem"]["questions"]:
+                        condidates_questions_dict[
+                            question["rowQuestion"]["title"]
+                        ].append(question["questionId"])
+            # expand the affliation and judge name columns to match the length of
+            # the other columns
+            max_length = max(len(v) for v in condidates_questions_dict.values())
+            for key, value in condidates_questions_dict.items():
+                if len(value) < max_length:
+                    condidates_questions_dict[key] *= max_length
+            condidates_questions_df = pd.DataFrame.from_dict(condidates_questions_dict)
+            return condidates_questions_df
+        except KeyError:
+            print(f"No questions yet for form [{self.formId}]")
+            return {}
 
     def get_responses_with_question_ids(self) -> dict:
         responses = self.get_responses()
-        responses_with_question_ids = {}
-        for response in responses["responses"]:
-            answers_with_question_ids = {}
-            for question_key in list(response["answers"].keys()):
+        try:
+            responses_with_question_ids = {}
+            for response in responses["responses"]:
+                answers_with_question_ids = {}
+                for question_key in list(response["answers"].keys()):
 
-                answers_with_question_ids[question_key] = response["answers"][
-                    question_key
-                ]["textAnswers"]["answers"][0]["value"]
+                    answers_with_question_ids[question_key] = response["answers"][
+                        question_key
+                    ]["textAnswers"]["answers"][0]["value"]
 
-            responses_with_question_ids[
-                response["responseId"]
-            ] = answers_with_question_ids
-        return responses_with_question_ids
+                responses_with_question_ids[
+                    response["responseId"]
+                ] = answers_with_question_ids
+            print(f"responses_with_question_ids after { responses_with_question_ids}")
+            print(f"answers_with_question_ids { answers_with_question_ids}")
+            ## convert all missing values to None
+            return responses_with_question_ids
+        except KeyError:
+            print(f"No responses yet for form [{self.formId}]")
+            return {}
 
     def map_responses_to_questions(self) -> pd.core.frame.DataFrame:
         responses_with_question_ids = self.get_responses_with_question_ids()
         condidates_questions_df = self.get_questions_with_question_ids()
         list_of_response_dfs = []
-        for _, response in responses_with_question_ids.items():
-            temp_response_df = None
-            temp_response_df = condidates_questions_df.replace(
-                to_replace=response, inplace=False
+        if (
+            responses_with_question_ids
+            and type(condidates_questions_df) == pd.core.frame.DataFrame
+        ):
+            for _, response in responses_with_question_ids.items():
+                temp_response_df = None
+                print(condidates_questions_df)
+                print(response)
+                temp_response_df = condidates_questions_df.replace(
+                    to_replace=response, inplace=False
+                )
+                list_of_response_dfs.append(temp_response_df)
+            responses_df = pd.concat(list_of_response_dfs)
+            current_file_path = pathlib.Path(__file__).parent.absolute()
+            file_name = (
+                "responses_"
+                + str(datetime.now().isoformat()).replace(":", "_")
+                + "_"
+                + str(self.form_type)
+                + ".csv"
             )
-            list_of_response_dfs.append(temp_response_df)
-        responses_df = pd.concat(list_of_response_dfs)
-        return responses_df
+            responses_df.to_csv(current_file_path / "data" / file_name)
+            return responses_df
 
     def get_candidates_by_rank(self) -> pd.core.frame.DataFrame:
         candidates_mean_makes_df = {}

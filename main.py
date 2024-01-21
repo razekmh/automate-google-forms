@@ -25,6 +25,15 @@ group_dataframes_of_applicatants = process_df(
         )
     )
 )
+
+# %%
+# export all forms to local csv files
+forms_ids = [form["id"] for form in drive_service_instance.list_forms()["files"]]
+for form_id in forms_ids:
+    form_instance = form_handler(formId=form_id)
+    form_instance.map_responses_to_questions()
+
+
 # %%
 # # Create a form
 # form = form_handler(form_service_instance=form_service_instance, form_title="Test Form")
@@ -45,4 +54,20 @@ for form_type in Form_Type:
         group_dataframes_of_applicatants, form_type, document_service_instance
     )
     print("Created form for: ", form_type.value, " form url", form.get_form_url())
+# %%
+
+
+def get_forms_names_and_links():
+    drive = drive_service(get_credentials())
+    forms = drive.list_forms()["files"]
+    forms_names_and_links = []
+    for form in forms:
+        form_object = form_handler(formId=form["id"])
+        forms_names_and_links.append(
+            {"name": form_object.form_type, "link": form_object.get_form_url()}
+        )
+    return forms_names_and_links
+
+
+print(get_forms_names_and_links())
 # %%
