@@ -29,12 +29,16 @@ def export_ranking_to_csv(drive_service_instance: Drive_service) -> None:
         form_instance.export_candidates_ranking_to_csv()
 
 
-def temp_arg(form_instance: Form_handler) -> None:
-    form_instance.temp_call()
+def temp_arg() -> None:
+    drive = Drive_service(credentials=get_credentials())
+    list_of_forms = drive.get_list_of_forms_ids()
+    for formId in list_of_forms:
+        form_instance = Form_handler(formId=formId)
+        form_instance.temp_call()
 
 
 def main() -> None:
-    logger.info("Starting intake24 process")
+    logger.info("Starting CAA forms process")
     Parser = ArgumentParser(description="")
     Parser.add_argument(
         "-a",
@@ -57,10 +61,7 @@ def main() -> None:
     elif args.action == "export_ranking":
         export_ranking_to_csv(drive_service_instance)
     elif args.action == "temp":
-        form_instance = Form_handler(
-            formId="1fx9v2YUaDri3BTFe3RgcEAEKIZHwMIJuckTosl5PXVk"
-        )
-        temp_arg(form_instance)
+        temp_arg()
     else:
         print("Invalid action")
 

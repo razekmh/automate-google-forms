@@ -129,6 +129,10 @@ class Drive_service(Service_template):
         )
         return result
 
+    def get_list_of_forms_ids(self) -> list:
+        forms = self.list_forms()
+        return [form["id"] for form in forms["files"]]
+
     def __delete_all_forms(self) -> dict:
         forms = self.list_forms()
         for form in forms["files"]:
@@ -318,6 +322,91 @@ class Form_handler:
             questions_id_and_name_for_grid_questions_dict[question_id] = question_name
         return {candidate_name: questions_id_and_name_for_grid_questions_dict}
 
+    def __build_default_dict_for_form(self) -> defaultdict:
+        form_content = self.form_service.get(formId=self.formId)
+        condidates_questions_dict = defaultdict(list)
+        try:
+            for item in form_content["items"]:
+                if "questionGroupItem" not in item.keys():
+                    condidates_questions_dict[item["title"]].append(
+                        item["questionItem"]["question"]["questionId"]
+                    )
+                else:
+                    name_of_candidate = item["title"]
+                    condidates_questions_dict["candidate"].append(name_of_candidate)
+                    for question in item["questionGroupItem"]["questions"]:
+                        condidates_questions_dict[
+                            question["rowQuestion"]["title"]
+                        ].append(question["questionId"])
+            # expand the affliation and judge name columns to match the length of
+            # the other columns
+            # print(condidates_questions_dict)
+            max_length = max(len(v) for v in condidates_questions_dict.values())
+            for key, value in condidates_questions_dict.items():
+                if len(value) < max_length:
+                    condidates_questions_dict[key] *= max_length
+        except KeyError:
+            logger.info(
+                f"No questions yet for form [{self.form_type}] with id [{self.formId}]"
+            )
+        return condidates_questions_dict
+
+    def __build_responses_list_for_form(self) -> list:
+        response = self.get_responses()
+        if not response:
+            logger.info(
+                f"No responses yet for form [{self.form_type}] with id [{self.formId}]"
+            )
+            return []
+        responses_list = []
+        logger.info(f"got [{len(response['responses'])}] responses")
+        for response in response["responses"]:
+            answers = response["answers"]
+            questions_answers_dict = {}
+            for question_key in list(answers.keys()):
+                answers_text = answers[question_key]["textAnswers"]["answers"][0][
+                    "value"
+                ]
+                questions_answers_dict[question_key] = answers_text
+            responses_list.append(questions_answers_dict)
+        return responses_list
+
+    def __map_answers_to_questions(
+        self, condidates_questions_dict: dict, response_dict: dict
+    ) -> defaultdict:
+        mapped_dict = defaultdict(list)
+        for things in condidates_questions_dict.items():
+            key = things[0]
+            value = things[1]
+            if key != "candidate":
+                for value_item in value:
+                    try:
+                        mapped_dict[key].append(response_dict[value_item])
+                    except KeyError:
+                        mapped_dict[key].append("")
+            else:
+                mapped_dict[key] = value
+
+        # expand the affliation and judge name columns to match the length of
+        max_length = max(len(v) for v in mapped_dict.values())
+        for key, value in mapped_dict.items():
+            if len(value) < max_length:
+                mapped_dict[key] *= max_length
+        return mapped_dict
+
+    def __get_responses_df(self) -> pd.core.frame.DataFrame:
+        condidates_questions_dict = self.__build_default_dict_for_form()
+        responses_list = self.__build_responses_list_for_form()
+        list_of_dfs = []
+        for response_dict in responses_list:
+            mapped_dict = self.__map_answers_to_questions(
+                condidates_questions_dict, response_dict
+            )
+            response_df = pd.DataFrame.from_dict(mapped_dict)
+            list_of_dfs.append(response_df)
+        responses_df = pd.concat(list_of_dfs, ignore_index=True)
+        return responses_df
+
     def __extract_quetions_ids_and_responses_given_questions_ids(
         self, quetions_id_dict: dict
     ) -> list:
@@ -367,7 +456,7 @@ class Form_handler:
                         candidate_name
                     ] = questions_answers_candidate_dict
             responses_list.append(questions_answers_dict)
-            print(responses_list)
+            # print(responses_list)
         return responses_list
 
     def __get_full_questions_id_and_name(self) -> dict:
@@ -404,7 +493,7 @@ class Form_handler:
         return responses_list
 
     def temp_call(self) -> None:
-        self.__build_list_of_responses_with_questions_names()
+        print(self.__get_responses_df())
 
     def get_questions_with_question_ids(self) -> pd.core.frame.DataFrame:
         form_content = self.form_service.get(formId=self.formId)
@@ -424,6 +513,7 @@ class Form_handler:
                         ].append(question["questionId"])
             # expand the affliation and judge name columns to match the length of
             # the other columns
+            # print(condidates_questions_dict)
             max_length = max(len(v) for v in condidates_questions_dict.values())
             for key, value in condidates_questions_dict.items():
                 if len(value) < max_length:
