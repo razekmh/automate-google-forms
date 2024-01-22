@@ -7,6 +7,7 @@ from service_template import (
     # Form_service,
     # Sheet_service,
 )
+from log import logger
 
 # from settings import MAJOR_DIMENSION, RANGE, SPREADSHEET_ID
 # from utils import Form_Type, convert_sheet_data_to_df, process_df
@@ -28,12 +29,17 @@ def export_ranking_to_csv(drive_service_instance: Drive_service) -> None:
         form_instance.export_candidates_ranking_to_csv()
 
 
+def temp_arg(form_instance: Form_handler) -> None:
+    form_instance.temp_call()
+
+
 def main() -> None:
+    logger.info("Starting intake24 process")
     Parser = ArgumentParser(description="")
     Parser.add_argument(
         "-a",
         "--action",
-        choices=["export_all_candidates", "create_all", "export_ranking"],
+        choices=["export_all_candidates", "create_all", "export_ranking", "temp"],
         required=True,
     )
     args = Parser.parse_args()
@@ -44,12 +50,17 @@ def main() -> None:
     # sheet_service_instance = Sheet_service(get_credentials())
     # document_service_instance = Document_service(get_credentials())
 
-    if args.action == "export_all":
+    if args.action == "export_all_candidates":
         export_all_forms_to_csv(drive_service_instance)
     elif args.action == "create_all":
         pass
     elif args.action == "export_ranking":
         export_ranking_to_csv(drive_service_instance)
+    elif args.action == "temp":
+        form_instance = Form_handler(
+            formId="1fx9v2YUaDri3BTFe3RgcEAEKIZHwMIJuckTosl5PXVk"
+        )
+        temp_arg(form_instance)
     else:
         print("Invalid action")
 
