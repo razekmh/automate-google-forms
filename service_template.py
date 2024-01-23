@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from collections import defaultdict
 
 # from dataclasses import dataclass
@@ -42,16 +41,7 @@ class Form_Type(Enum):
     PROJECT = "Project"
 
 
-class Service_template(ABC):
-    def __init__(self) -> None:
-        pass
-
-    @abstractmethod
-    def get(self, id: str) -> dict:
-        pass
-
-
-class Document_service(Service_template):
+class Document_service:
     def __init__(self, credentials: dict) -> None:
         self.service = build("docs", "v1", credentials=credentials)
 
@@ -92,7 +82,7 @@ class Document_service(Service_template):
         return first_column_text[1:]
 
 
-class Form_service(Service_template):
+class Form_service:
     def __init__(self, credentials: dict) -> None:
         self.service = build("forms", "v1", credentials=credentials)
 
@@ -113,7 +103,7 @@ class Form_service(Service_template):
         return form
 
 
-class Drive_service(Service_template):
+class Drive_service:
     def __init__(self, credentials: dict) -> None:
         self.service = build("drive", "v3", credentials=credentials)
 
@@ -140,7 +130,7 @@ class Drive_service(Service_template):
         return forms
 
 
-class Sheet_service(Service_template):
+class Sheet_service:
     def __init__(self, credentials: dict) -> None:
         self.service = build("sheets", "v4", credentials=credentials)
 
