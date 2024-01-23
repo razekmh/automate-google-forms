@@ -291,27 +291,27 @@ class Form_handler:
 
         return self.form
 
-    def __extract_questions_id_and_name_for_text_and_select_questions(
-        self, item: dict
-    ) -> dict:
-        if "questionGroupItem" in item.keys():
-            logger.info(f"questionGroupItem in item.keys() [{item['itemId']}]")
-            raise KeyError
-        question_id = item["questionItem"]["question"]["questionId"]
-        question_name = item["title"]
-        return {question_id: question_name}
+    # def __extract_questions_id_and_name_for_text_and_select_questions(
+    #     self, item: dict
+    # ) -> dict:
+    #     if "questionGroupItem" in item.keys():
+    #         logger.info(f"questionGroupItem in item.keys() [{item['itemId']}]")
+    #         raise KeyError
+    #     question_id = item["questionItem"]["question"]["questionId"]
+    #     question_name = item["title"]
+    #     return {question_id: question_name}
 
-    def __extract_questions_id_and_name_for_a_grid_question(self, item: dict) -> dict:
-        questions_id_and_name_for_grid_questions_dict = {}
-        if "questionGroupItem" not in item.keys():
-            logger.info(f"questionGroupItem not in item.keys() [{item['itemId']}]")
-            raise KeyError
-        candidate_name = item["title"]
-        for question in item["questionGroupItem"]["questions"]:
-            question_id = question["questionId"]
-            question_name = question["rowQuestion"]["title"]
-            questions_id_and_name_for_grid_questions_dict[question_id] = question_name
-        return {candidate_name: questions_id_and_name_for_grid_questions_dict}
+    # def __extract_questions_id_and_name_for_a_grid_question(self, item: dict) -> dict:
+    #     questions_id_and_name_for_grid_questions_dict = {}
+    #     if "questionGroupItem" not in item.keys():
+    #         logger.info(f"questionGroupItem not in item.keys() [{item['itemId']}]")
+    #         raise KeyError
+    #     candidate_name = item["title"]
+    #     for question in item["questionGroupItem"]["questions"]:
+    #         question_id = question["questionId"]
+    #         question_name = question["rowQuestion"]["title"]
+    #         questions_id_and_name_for_grid_questions_dict[question_id] = question_name
+    #     return {candidate_name: questions_id_and_name_for_grid_questions_dict}
 
     def __build_default_dict_for_form(self) -> defaultdict:
         form_content = self.form_service.get(formId=self.formId)
@@ -402,91 +402,6 @@ class Form_handler:
             list_of_dfs.append(response_df)
         responses_df = pd.concat(list_of_dfs, ignore_index=True)
         return responses_df
-
-    def __extract_quetions_ids_and_responses_given_questions_ids(
-        self, quetions_id_dict: dict
-    ) -> list:
-        # TODO: fix this to accomdate for the change in the dict structure
-
-        """Takes a dict of {'questions id': 'questions title'}
-        returns a list of the response to the form as
-        a list of dicts {'questions title': 'response'}
-        if a question was not answered the response will be empty string"""
-        response = self.get_responses()
-        if not response:
-            logger.info(
-                f"No responses yet for form [{self.form_type}] with id [{self.formId}]"
-            )
-            return []
-        responses_list = []
-        logger.info(f"got [{len(response['responses'])}] responses")
-        for response in response["responses"]:
-            answers = response["answers"]
-
-            questions_answers_dict = {}
-            for question_key in list(quetions_id_dict.keys()):
-                if quetions_id_dict[question_key] in ["Judge Name", "Affiliation"]:
-                    questions_answers_dict[quetions_id_dict[question_key]] = answers[
-                        question_key
-                    ]["textAnswers"]["answers"][0]["value"]
-                else:
-                    candidate_name = question_key
-                    questions_answers_candidate_dict = {}
-                    for candidate_question_key in list(
-                        quetions_id_dict[question_key].keys()
-                    ):
-                        try:
-                            questions_answers_candidate_dict[
-                                quetions_id_dict[question_key][candidate_question_key]
-                            ] = answers[candidate_question_key]["textAnswers"][
-                                "answers"
-                            ][0]["value"]
-                        except KeyError:
-                            logger.info(
-                                f"question [{quetions_id_dict[question_key][candidate_question_key]}] for candidate [{candidate_name}] was not answered"
-                            )
-                            questions_answers_candidate_dict[
-                                quetions_id_dict[question_key][candidate_question_key]
-                            ] = ""
-                    questions_answers_dict[
-                        candidate_name
-                    ] = questions_answers_candidate_dict
-            responses_list.append(questions_answers_dict)
-            # print(responses_list)
-        return responses_list
-
-    def __get_full_questions_id_and_name(self) -> dict:
-        form_content = self.form_service.get(formId=self.formId)
-        questions_id_and_name_dict = {}
-
-        try:
-            logger.info(f"got [{len(form_content['items'])}] questions")
-            for item in form_content["items"]:
-                if "questionGroupItem" not in item.keys():
-                    questions_id_and_name_dict.update(
-                        self.__extract_questions_id_and_name_for_text_and_select_questions(
-                            item
-                        )
-                    )
-                else:
-                    questions_id_and_name_dict.update(
-                        self.__extract_questions_id_and_name_for_a_grid_question(item)
-                    )
-            return questions_id_and_name_dict
-        except KeyError:
-            logger.info(f"No questions yet for form [{self.formId}]")
-            raise KeyError
-
-    def __build_list_of_responses_with_questions_names(self) -> list:
-        questions_id_and_name_dict = self.__get_full_questions_id_and_name()
-        responses_list = self.__extract_quetions_ids_and_responses_given_questions_ids(
-            questions_id_and_name_dict
-        )
-        if len(responses_list) == 0:
-            logger.info(
-                f"No responses yet for form [{self.form_type}] with id [{self.formId}]"
-            )
-        return responses_list
 
     def temp_call(self) -> None:
         self.__get_responses_df()
