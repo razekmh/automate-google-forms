@@ -182,7 +182,7 @@ class Form_handler:
 
         if formId:
             self.formId = formId
-            logger.info(f"form captured with id {self.formId}")
+            logger.info(f"form captured with id [{self.formId}]")
         else:
             NEW_FORM = {
                 "info": {
@@ -194,7 +194,7 @@ class Form_handler:
                 self.form_service.service.forms().create(body=NEW_FORM).execute()
             )
             self.formId = form_object["formId"]
-            logger.info(f"form created with id {self.formId}")
+            logger.info(f"form created with id [{self.formId}]")
 
         self.__post_init__()
 
@@ -203,6 +203,7 @@ class Form_handler:
         self.form_url = self.get_form_url()
         self.revisionId = self.get_revisionId()
         self.form_type = self.get()["info"]["title"]
+        logger.info(f"form name captured/create [{self.form_type}]")
         # print(self.form_type)
 
     def __repr__(self) -> str:
@@ -304,7 +305,7 @@ class Form_handler:
         self, item: dict
     ) -> dict:
         if "questionGroupItem" in item.keys():
-            logger.info(f"questionGroupItem in item.keys() {item['itemId']}")
+            logger.info(f"questionGroupItem in item.keys() [{item['itemId']}]")
             raise KeyError
         question_id = item["questionItem"]["question"]["questionId"]
         question_name = item["title"]
@@ -313,7 +314,7 @@ class Form_handler:
     def __extract_questions_id_and_name_for_a_grid_question(self, item: dict) -> dict:
         questions_id_and_name_for_grid_questions_dict = {}
         if "questionGroupItem" not in item.keys():
-            logger.info(f"questionGroupItem not in item.keys() {item['itemId']}")
+            logger.info(f"questionGroupItem not in item.keys() [{item['itemId']}]")
             raise KeyError
         candidate_name = item["title"]
         for question in item["questionGroupItem"]["questions"]:
@@ -358,6 +359,7 @@ class Form_handler:
                 f"No responses yet for form [{self.form_type}] with id [{self.formId}]"
             )
             return []
+        list_of_judge_names = []
         responses_list = []
         logger.info(f"got [{len(response['responses'])}] responses")
         for response in response["responses"]:
@@ -368,7 +370,11 @@ class Form_handler:
                     "value"
                 ]
                 questions_answers_dict[question_key] = answers_text
+            for key, value in questions_answers_dict.items():
+                if value not in ["CAA", "FCDO", "Secretariat"] and not value.isdigit():
+                    list_of_judge_names.append(value)
             responses_list.append(questions_answers_dict)
+        logger.info(f"list_of_judge_names [{list_of_judge_names}]")
         return responses_list
 
     def __map_answers_to_questions(
@@ -493,7 +499,7 @@ class Form_handler:
         return responses_list
 
     def temp_call(self) -> None:
-        print(self.__get_responses_df())
+        self.__get_responses_df()
 
     def get_questions_with_question_ids(self) -> pd.core.frame.DataFrame:
         form_content = self.form_service.get(formId=self.formId)
