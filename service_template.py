@@ -291,29 +291,18 @@ class Form_handler:
 
         return self.form
 
-    # def __extract_questions_id_and_name_for_text_and_select_questions(
-    #     self, item: dict
-    # ) -> dict:
-    #     if "questionGroupItem" in item.keys():
-    #         logger.info(f"questionGroupItem in item.keys() [{item['itemId']}]")
-    #         raise KeyError
-    #     question_id = item["questionItem"]["question"]["questionId"]
-    #     question_name = item["title"]
-    #     return {question_id: question_name}
-
-    # def __extract_questions_id_and_name_for_a_grid_question(self, item: dict) -> dict:
-    #     questions_id_and_name_for_grid_questions_dict = {}
-    #     if "questionGroupItem" not in item.keys():
-    #         logger.info(f"questionGroupItem not in item.keys() [{item['itemId']}]")
-    #         raise KeyError
-    #     candidate_name = item["title"]
-    #     for question in item["questionGroupItem"]["questions"]:
-    #         question_id = question["questionId"]
-    #         question_name = question["rowQuestion"]["title"]
-    #         questions_id_and_name_for_grid_questions_dict[question_id] = question_name
-    #     return {candidate_name: questions_id_and_name_for_grid_questions_dict}
-
     def __build_default_dict_for_form(self) -> defaultdict:
+        """
+        pull the forms and create a defaultdict[list] with the structure of
+        {attribute_name: [question01_id, question02_id, ...],...}, with the exception of
+        the candidate name which is a list of names. The Judge name and affiliation are
+        repeated lists of the same question id to match the length of the other columns
+
+        input: self
+        attributes used: self.formId
+        methods used: self.form_service.get()
+        output: defaultdict[list]
+        """
         form_content = self.form_service.get(formId=self.formId)
         condidates_questions_dict = defaultdict(list)
         try:
@@ -329,9 +318,6 @@ class Form_handler:
                         condidates_questions_dict[
                             question["rowQuestion"]["title"]
                         ].append(question["questionId"])
-            # expand the affliation and judge name columns to match the length of
-            # the other columns
-            # print(condidates_questions_dict)
             max_length = max(len(v) for v in condidates_questions_dict.values())
             for key, value in condidates_questions_dict.items():
                 if len(value) < max_length:
@@ -342,7 +328,50 @@ class Form_handler:
             )
         return condidates_questions_dict
 
+    def __map_answers_to_questions(
+        self, condidates_questions_dict: dict, response_dict: dict
+    ) -> defaultdict:
+        """
+        maps answers from a response dict to the questions in
+        condidates_questions_dict and returns a defaultdict[list]
+        with similar structure to condidates_questions_dict but with the answers
+        instead of the question ids
+
+        input: condidates_questions_dict, response_dict
+        attributes used: none
+        methods used: none
+        output: defaultdict[list]
+        """
+        mapped_dict = defaultdict(list)
+        for things in condidates_questions_dict.items():
+            key = things[0]
+            value = things[1]
+            if key != "candidate":
+                for value_item in value:
+                    try:
+                        mapped_dict[key].append(response_dict[value_item])
+                    except KeyError:
+                        mapped_dict[key].append("")
+            else:
+                mapped_dict[key] = value
+
+        # # expand the affliation and judge name columns to match the length of
+        # max_length = max(len(v) for v in mapped_dict.values())
+        # for key, value in mapped_dict.items():
+        #     if len(value) < max_length:
+        #         mapped_dict[key] *= max_length
+        return mapped_dict
+
     def __build_responses_list_for_form(self) -> list:
+        """
+        build a list of responses for a form with the structure of
+        [{question01_id: answer01, question02_id: answer02, ...}, ...]
+
+        input: self
+        attributes used: self.formId, self.form_type
+        methods used: self.form_service.get()
+        output: list
+        """
         response = self.get_responses()
         if not response:
             logger.info(
@@ -360,37 +389,33 @@ class Form_handler:
                     "value"
                 ]
                 questions_answers_dict[question_key] = answers_text
-            for key, value in questions_answers_dict.items():
+
+            # get the list of judge names
+            for _, value in questions_answers_dict.items():
                 if value not in ["CAA", "FCDO", "Secretariat"] and not value.isdigit():
                     list_of_judge_names.append(value)
             responses_list.append(questions_answers_dict)
         logger.info(f"list_of_judge_names [{list_of_judge_names}]")
         return responses_list
 
-    def __map_answers_to_questions(
-        self, condidates_questions_dict: dict, response_dict: dict
-    ) -> defaultdict:
-        mapped_dict = defaultdict(list)
-        for things in condidates_questions_dict.items():
-            key = things[0]
-            value = things[1]
-            if key != "candidate":
-                for value_item in value:
-                    try:
-                        mapped_dict[key].append(response_dict[value_item])
-                    except KeyError:
-                        mapped_dict[key].append("")
-            else:
-                mapped_dict[key] = value
-
-        # expand the affliation and judge name columns to match the length of
-        max_length = max(len(v) for v in mapped_dict.values())
-        for key, value in mapped_dict.items():
-            if len(value) < max_length:
-                mapped_dict[key] *= max_length
-        return mapped_dict
-
     def __get_responses_df(self) -> pd.core.frame.DataFrame:
+        """
+        build a dataframe of responses for a form with the structure of
+
+        Judge Name | Affiliation | candidate | Question 1 | Question 2 | ...
+        ---------------------------------------------------------------------
+        Judge 1     | CAA         | candidate1| answer1    | answer2    | ...
+        Judge 1     | CAA         | candidate2| answer1    | answer2    | ...
+        Judge 2     | CAA         | candidate1| answer1    | answer2    | ...
+        Judge 2     | CAA         | candidate2| answer1    | answer2    | ...
+
+        input: self
+        attributes used: none
+        methods used: self.__build_default_dict_for_form(),
+                    self.__build_responses_list_for_form(),
+                    self.__map_answers_to_questions()
+        output: pd.core.frame.DataFrame
+        """
         condidates_questions_dict = self.__build_default_dict_for_form()
         responses_list = self.__build_responses_list_for_form()
         list_of_dfs = []
