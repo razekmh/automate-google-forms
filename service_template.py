@@ -7,6 +7,7 @@ import pathlib
 from typing import Optional
 import itertools
 from log import logger
+import numpy as np
 
 import pandas as pd
 from googleapiclient.discovery import build
@@ -194,7 +195,6 @@ class Form_handler:
         self.revisionId = self.get_revisionId()
         self.form_type = self.get()["info"]["title"]
         logger.info(f"form name captured/create [{self.form_type}]")
-        # print(self.form_type)
 
     def __repr__(self) -> str:
         return f"Form Object: {str(self.formId)}"
@@ -351,15 +351,9 @@ class Form_handler:
                     try:
                         mapped_dict[key].append(response_dict[value_item])
                     except KeyError:
-                        mapped_dict[key].append("")
+                        mapped_dict[key].append(np.nan)
             else:
                 mapped_dict[key] = value
-
-        # # expand the affliation and judge name columns to match the length of
-        # max_length = max(len(v) for v in mapped_dict.values())
-        # for key, value in mapped_dict.items():
-        #     if len(value) < max_length:
-        #         mapped_dict[key] *= max_length
         return mapped_dict
 
     def __build_responses_list_for_form(self) -> list:
@@ -426,10 +420,30 @@ class Form_handler:
             response_df = pd.DataFrame.from_dict(mapped_dict)
             list_of_dfs.append(response_df)
         responses_df = pd.concat(list_of_dfs, ignore_index=True)
-        return responses_df
+        responses_df_numeric = responses_df.apply(pd.to_numeric, errors="ignore")
+        # remove empty lines
+        responses_df_numeric = self.__remove_empty_lines(responses_df_numeric)
+        return responses_df_numeric
+
+    def __remove_empty_lines(
+        self, df: pd.core.frame.DataFrame
+    ) -> pd.core.frame.DataFrame:
+        """
+        returns a dataframe without lines of empty scores
+        """
+        scores_columns = [
+            column
+            for column in df.columns
+            if column not in ["candidate", "Judge Name", "Affiliation"]
+        ]
+        clean_df = df.dropna(subset=scores_columns, how="all")
+        logger.info(
+            f"removed [{len(df) - len(clean_df)}] empty lines from form [{self.form_type}]"
+        )
+        return clean_df
 
     def temp_call(self) -> None:
-        self.__get_responses_df()
+        print(self.__get_candidates_by_rank())
 
     def get_questions_with_question_ids(self) -> pd.core.frame.DataFrame:
         form_content = self.form_service.get(formId=self.formId)
@@ -449,7 +463,6 @@ class Form_handler:
                         ].append(question["questionId"])
             # expand the affliation and judge name columns to match the length of
             # the other columns
-            # print(condidates_questions_dict)
             max_length = max(len(v) for v in condidates_questions_dict.values())
             for key, value in condidates_questions_dict.items():
                 if len(value) < max_length:
@@ -474,8 +487,6 @@ class Form_handler:
                 responses_with_question_ids[
                     response["responseId"]
                 ] = answers_with_question_ids
-            # print(f"responses_with_question_ids after { responses_with_question_ids}")
-            # print(f"answers_with_question_ids { answers_with_question_ids}")
             ## convert all missing values to None
             return responses_with_question_ids
         except KeyError:
@@ -511,8 +522,6 @@ class Form_handler:
         responses_with_question_ids = self.__fill_skipped_questions_answered(
             responses_with_question_ids, condidates_questions_df
         )
-        # print(f"esponses_with_question_ids {responses_with_question_ids}")
-        # print(f"condidates_questions_df {condidates_questions_df}")
         list_of_response_dfs = []
         if (
             responses_with_question_ids
@@ -520,8 +529,6 @@ class Form_handler:
         ):
             for _, response in responses_with_question_ids.items():
                 temp_response_df = None
-                # print(condidates_questions_df)
-                # print(response)
                 temp_response_df = condidates_questions_df.replace(
                     to_replace=response, inplace=False
                 )
@@ -534,25 +541,62 @@ class Form_handler:
             return responses_df_numeric
 
     def __get_candidates_by_rank(self) -> pd.core.frame.DataFrame:
+        """ "
+        returns a dataframe with the mean of the answers for each candidate
+        and sorts the candidates based on the score
+
+        input: self
+        attributes used: none
+        methods used: self.__build_list_of_response_dfs()
+        output: pd.core.frame.DataFrame
+        """
         candidates_mean_makes_dict = {}
-        responses_df = self.__build_list_of_response_dfs()
-
+        responses_df = self.__get_responses_df()
+        # print(responses_df)
         # group by candidate and calculate the mean of each candidate
-        if responses_df is not None:  # if the dataframe is not empty
-            responses_df_group = responses_df.groupby("candidate")
-            for candidate, df in responses_df_group:
-                df["mean_per_judge"] = df.select_dtypes("number").mean(axis=1)
-                candidates_mean_makes_dict[candidate] = df["mean_per_judge"].mean()
-            candidates_mean_makes_df = pd.DataFrame.from_dict(
-                candidates_mean_makes_dict, orient="index"
-            )
+        responses_df_group = responses_df.groupby("candidate")
+        for candidate, df in responses_df_group:
+            self.__report_missing_scores(df)
 
-            candidates_mean_makes_df.sort_values(by=0, ascending=False, inplace=True)
-            return candidates_mean_makes_df
+            # df["mean_per_judge"] = df.select_dtypes("number").mean(axis=1)
+            df["mean_per_judge"] = df.mean(axis=1, skipna=True, numeric_only=True)
+            print(f"df.select_dtypes('number') is {df.select_dtypes('number')}")
+            print(df["mean_per_judge"])
+            for _, row in df.iterrows():
+                print(row)
+            candidates_mean_makes_dict[candidate] = df["mean_per_judge"].mean()
+        candidates_mean_makes_df = pd.DataFrame.from_dict(
+            candidates_mean_makes_dict, orient="index"
+        )
+
+        candidates_mean_makes_df.sort_values(by=0, ascending=False, inplace=True)
+        return candidates_mean_makes_df
+
+    def __report_missing_scores(self, df: pd.core.frame.DataFrame) -> None:
+        if df.isnull().values.any():
+            null_df = df[df.isnull().any(axis=1)]
+            for _, row in null_df.iterrows():
+                judge_name = row["Judge Name"]
+                candidate_name = row["candidate"]
+                columns_with_null = [
+                    key for key, value in row.items() if value != value
+                ]
+                logger.info(
+                    f"candidate [{candidate_name}] has missing answers [{columns_with_null}] for judge [{judge_name}] in form [{self.form_type}] with id [{self.formId}]"
+                )
 
     def __save_dataframes_to_csv(
         self, df: pd.core.frame.DataFrame, df_type: str = "responses"
     ) -> None:
+        """
+        saves a dataframe to a csv file with the name
+        [df_type]_[date]_[form_type].csv
+
+        input: df, df_type
+        attributes used: self.form_type
+        methods used: none
+        output: none
+        """
         current_file_path = pathlib.Path(__file__).parent.absolute()
         file_name = (
             df_type
