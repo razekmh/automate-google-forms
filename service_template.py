@@ -5,7 +5,6 @@ from enum import Enum
 from datetime import datetime
 import pathlib
 from typing import Optional
-import itertools
 from log import logger
 import numpy as np
 
@@ -443,102 +442,7 @@ class Form_handler:
         return clean_df
 
     def temp_call(self) -> None:
-        print(self.__get_candidates_by_rank())
-
-    def get_questions_with_question_ids(self) -> pd.core.frame.DataFrame:
-        form_content = self.form_service.get(formId=self.formId)
-        condidates_questions_dict = defaultdict(list)
-        try:
-            for item in form_content["items"]:
-                if "questionGroupItem" not in item.keys():
-                    condidates_questions_dict[item["title"]].append(
-                        item["questionItem"]["question"]["questionId"]
-                    )
-                else:
-                    name_of_candidate = item["title"]
-                    condidates_questions_dict["candidate"].append(name_of_candidate)
-                    for question in item["questionGroupItem"]["questions"]:
-                        condidates_questions_dict[
-                            question["rowQuestion"]["title"]
-                        ].append(question["questionId"])
-            # expand the affliation and judge name columns to match the length of
-            # the other columns
-            max_length = max(len(v) for v in condidates_questions_dict.values())
-            for key, value in condidates_questions_dict.items():
-                if len(value) < max_length:
-                    condidates_questions_dict[key] *= max_length
-            condidates_questions_df = pd.DataFrame.from_dict(condidates_questions_dict)
-            return condidates_questions_df
-        except KeyError:
-            logger.info(f"No questions yet for form [{self.formId}]")
-            return {}
-
-    def get_responses_with_question_ids(self) -> dict:
-        responses = self.get_responses()
-        try:
-            responses_with_question_ids = {}
-            for response in responses["responses"]:
-                answers_with_question_ids = {}
-                for question_key in list(response["answers"].keys()):
-                    answers_with_question_ids[question_key] = response["answers"][
-                        question_key
-                    ]["textAnswers"]["answers"][0]["value"]
-
-                responses_with_question_ids[
-                    response["responseId"]
-                ] = answers_with_question_ids
-            ## convert all missing values to None
-            return responses_with_question_ids
-        except KeyError:
-            logger.info(
-                f"No responses yet for form [{self.form_type}] with id [{self.formId}]"
-            )
-            return {}
-
-    def __fill_skipped_questions_answered(
-        self,
-        responses_with_question_ids: dict,
-        condidates_questions_df: pd.core.frame.DataFrame,
-        fillna: bool = True,
-    ) -> dict:
-        list_of_all_questions_ids = list(
-            itertools.chain.from_iterable(
-                [
-                    condidates_questions_df[question].to_list()
-                    for question in condidates_questions_df.columns
-                    if question != "candidate"
-                ]
-            )
-        )
-        for question_id in list_of_all_questions_ids:
-            if question_id not in responses_with_question_ids.keys():
-                responses_with_question_ids[question_id] = ""
-        return responses_with_question_ids
-
-    def __build_list_of_response_dfs(self) -> pd.core.frame.DataFrame:
-        responses_with_question_ids = self.get_responses_with_question_ids()
-        condidates_questions_df = self.get_questions_with_question_ids()
-        # check if all the questions are in the responses
-        responses_with_question_ids = self.__fill_skipped_questions_answered(
-            responses_with_question_ids, condidates_questions_df
-        )
-        list_of_response_dfs = []
-        if (
-            responses_with_question_ids
-            and type(condidates_questions_df) == pd.core.frame.DataFrame
-        ):
-            for _, response in responses_with_question_ids.items():
-                temp_response_df = None
-                temp_response_df = condidates_questions_df.replace(
-                    to_replace=response, inplace=False
-                )
-                list_of_response_dfs.append(temp_response_df)
-            responses_df = pd.concat(list_of_response_dfs)
-            # convert the responses to numeric values
-            responses_df_numeric = responses_df.apply(
-                pd.to_numeric, errors="coerce"
-            ).fillna(responses_df)
-            return responses_df_numeric
+        self.__get_candidates_by_rank()
 
     def __get_candidates_by_rank(self) -> pd.core.frame.DataFrame:
         """ "
@@ -547,7 +451,7 @@ class Form_handler:
 
         input: self
         attributes used: none
-        methods used: self.__build_list_of_response_dfs()
+        methods used: self.__get_responses_df()
         output: pd.core.frame.DataFrame
         """
         candidates_mean_makes_dict = {}
@@ -602,7 +506,7 @@ class Form_handler:
         df.to_csv(current_file_path / "data" / file_name)
 
     def export_all_responses_to_csv(self) -> None:
-        responses_df = self.__build_list_of_response_dfs()
+        responses_df = self.__get_responses_df()
         if responses_df is not None:
             self.__save_dataframes_to_csv(responses_df, "responses")
 
