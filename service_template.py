@@ -552,18 +552,11 @@ class Form_handler:
         """
         candidates_mean_makes_dict = {}
         responses_df = self.__get_responses_df()
-        # print(responses_df)
         # group by candidate and calculate the mean of each candidate
         responses_df_group = responses_df.groupby("candidate")
         for candidate, df in responses_df_group:
             self.__report_missing_scores(df)
-
-            # df["mean_per_judge"] = df.select_dtypes("number").mean(axis=1)
             df["mean_per_judge"] = df.mean(axis=1, skipna=True, numeric_only=True)
-            print(f"df.select_dtypes('number') is {df.select_dtypes('number')}")
-            print(df["mean_per_judge"])
-            for _, row in df.iterrows():
-                print(row)
             candidates_mean_makes_dict[candidate] = df["mean_per_judge"].mean()
         candidates_mean_makes_df = pd.DataFrame.from_dict(
             candidates_mean_makes_dict, orient="index"
