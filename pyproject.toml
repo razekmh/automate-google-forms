@@ -10,7 +10,7 @@ classifiers = [
 ]
 dependencies = [
     "google-api-python-client==2.172.*",
-    "google-auth==2.25.*"
+    "google-auth==2.40.*"
     ]
 [project.optional-dependencies]
 test = [
