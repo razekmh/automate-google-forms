@@ -9,7 +9,7 @@ classifiers = [
     "Programming Language :: Python :: 3"
 ]
 dependencies = [
-    "google-api-python-client==2.172.*",
+    "google-api-python-client==2.176.*",
     "google-auth==2.40.*"
     ]
 [project.optional-dependencies]
